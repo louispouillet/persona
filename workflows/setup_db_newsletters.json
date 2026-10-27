@@ -1,0 +1,108 @@
+{
+  "id": "kNS9q7seI8QDd591",
+  "name": "Setup DB Newsletters",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Run setup",
+      "id": "0a9e14f4-b9b9-4925-84a3-ff0e0509a492"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "articles",
+        "columns": {
+          "column": [
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            },
+            {
+              "name": "published_at",
+              "type": "date"
+            },
+            {
+              "name": "content",
+              "type": "string"
+            },
+            {
+              "name": "summary",
+              "type": "string"
+            },
+            {
+              "name": "categories",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Create articles",
+      "id": "5323f665-c5b2-44f6-8663-d7f44941cb65"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "Called by Setup DB",
+      "id": "c5e9e54e-0b53-45df-8f88-fecf425795af"
+    }
+  ],
+  "connections": {
+    "Run setup": {
+      "main": [
+        [
+          {
+            "node": "Create articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Called by Setup DB": {
+      "main": [
+        [
+          {
+            "node": "Create articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

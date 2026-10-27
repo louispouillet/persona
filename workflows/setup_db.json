@@ -1,0 +1,186 @@
+{
+  "id": "cO0ZFBzw6oKB87pR",
+  "name": "Setup DB",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Run setup",
+      "id": "22df2528-5f00-40fe-adfb-82e0aebb76b4"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "users",
+        "columns": {
+          "column": [
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "password_hash",
+              "type": "string"
+            },
+            {
+              "name": "salt",
+              "type": "string"
+            },
+            {
+              "name": "interests",
+              "type": "string"
+            },
+            {
+              "name": "send_hour",
+              "type": "string"
+            },
+            {
+              "name": "timezone",
+              "type": "string"
+            },
+            {
+              "name": "consent",
+              "type": "boolean"
+            },
+            {
+              "name": "consent_date",
+              "type": "date"
+            },
+            {
+              "name": "unsubscribed",
+              "type": "boolean"
+            },
+            {
+              "name": "failed_logins",
+              "type": "number"
+            },
+            {
+              "name": "locked_until",
+              "type": "date"
+            },
+            {
+              "name": "last_sent",
+              "type": "date"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Create users",
+      "id": "98bc49e9-01ca-4553-ba90-b93291cecbaf"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "sessions",
+        "columns": {
+          "column": [
+            {
+              "name": "session_id",
+              "type": "string"
+            },
+            {
+              "name": "user_id",
+              "type": "number"
+            },
+            {
+              "name": "expires_at",
+              "type": "date"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Create sessions",
+      "id": "58f1a1b7-14bd-473e-b8db-7cca61213228"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "kNS9q7seI8QDd591",
+          "cachedResultName": "Setup DB Newsletters"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ],
+      "name": "Run Setup DB Newsletters",
+      "id": "97df848f-e503-437e-87cb-ab83bd5f6fb2"
+    }
+  ],
+  "connections": {
+    "Run setup": {
+      "main": [
+        [
+          {
+            "node": "Create users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create users": {
+      "main": [
+        [
+          {
+            "node": "Create sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create sessions": {
+      "main": [
+        [
+          {
+            "node": "Run Setup DB Newsletters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
