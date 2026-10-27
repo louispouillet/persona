@@ -67,6 +67,10 @@
             {
               "name": "last_sent",
               "type": "date"
+            },
+            {
+              "name": "language",
+              "type": "string"
             }
           ]
         },

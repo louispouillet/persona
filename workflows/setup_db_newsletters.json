@@ -47,6 +47,10 @@
             {
               "name": "categories",
               "type": "string"
+            },
+            {
+              "name": "language",
+              "type": "string"
             }
           ]
         },
