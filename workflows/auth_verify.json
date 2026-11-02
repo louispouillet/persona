@@ -1,0 +1,605 @@
+{
+  "id": "vDiHqdWdrXFsWSn1",
+  "name": "Auth - Verify",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        832
+      ],
+      "id": "5ac63ff2-0f06-4e1e-bfa3-d3c517001ddd",
+      "name": "Find user for verify",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "type": "SHA512",
+        "value": "={{ ($json.salt || '') + $('Trigger').first().json.code }}",
+        "dataPropertyName": "candidate_hash"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        800,
+        832
+      ],
+      "id": "44b58ce0-bc5a-4e8d-a1dc-357246f313a9",
+      "name": "Hash code attempt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const user = $('Find user for verify').first().json;\nconst given = $('Trigger').first().json.code;\nconst candidate = $input.first().json.candidate_hash;\nconst MAX_ATTEMPTS = 5;\nconst refuse = (message) => [{ json: { ok: false, save: false, message } }];\n\nif (!user.id) return refuse('Invalid or expired code.');\nif (user.email_verified === true) return refuse('This email is already verified. You can log in.');\nif (!user.verify_code_hash || !user.verify_expires || new Date(user.verify_expires) <= new Date()) {\n  return refuse('Invalid or expired code. Ask for a new code.');\n}\nconst attempts = user.verify_attempts || 0;\nif (attempts >= MAX_ATTEMPTS) return refuse('Too many attempts. Ask for a new code.');\n\nconst ok = /^\\d{6}$/.test(given) && candidate === user.verify_code_hash;\nreturn [{ json: {\n  ok,\n  save: true,\n  userId: user.id,\n  verified: ok,\n  codeHash: ok ? '' : user.verify_code_hash,\n  expires: ok ? null : user.verify_expires,\n  attempts: ok ? 0 : attempts + 1,\n  message: ok ? 'Email verified. You can now log in.' : 'Invalid or expired code.',\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        832
+      ],
+      "id": "34e9c1f0-d771-4ce1-92c9-8e71629ef337",
+      "name": "Check code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "715e5c68-7d2d-4167-9113-548715021af6",
+              "leftValue": "={{ $json.save }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        832
+      ],
+      "id": "ed053008-689e-44bf-a3fc-6049e0c2f20c",
+      "name": "Save verification?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.userId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_verified": "={{ $json.verified }}",
+            "verify_code_hash": "={{ $json.codeHash }}",
+            "verify_expires": "={{ $json.expires }}",
+            "verify_attempts": "={{ $json.attempts }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email_verified",
+              "displayName": "email_verified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_code_hash",
+              "displayName": "verify_code_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_expires",
+              "displayName": "verify_expires",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_attempts",
+              "displayName": "verify_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        720
+      ],
+      "id": "814d13cc-c202-4681-b96d-0b0add5b9cc0",
+      "name": "Update verification",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1dac490-31d5-45e8-ac29-af6827949761",
+              "name": "message",
+              "value": "={{ $('Check code').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        832
+      ],
+      "id": "1ab9e41a-632a-41b6-8e41-7953e50f536d",
+      "name": "Reply: verification"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        1168
+      ],
+      "id": "4046672c-b4a3-4027-b6e8-8fbfdd28c5f4",
+      "name": "Find user for resend",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const user = $input.first().json;\nconst email = $('Trigger').first().json.email;\n// same answer whether or not the account exists, so emails cannot be probed\nconst message = 'If this account exists and is not verified yet, a new code was sent. A new code can be requested once per minute.';\nif (!user.id || user.email_verified === true) {\n  return [{ json: { ok: false, message } }];\n}\n// the code was sent (expiry minus 15 minutes) less than a minute ago\nif (user.verify_expires && new Date(user.verify_expires).getTime() - 14 * 60 * 1000 > Date.now()) {\n  return [{ json: { ok: false, message } }];\n}\nreturn [{ json: { ok: true, id: user.id, email: user.email, salt: user.salt, message } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        1168
+      ],
+      "id": "a16acec4-bc9d-42e4-9524-6a1f7dfede76",
+      "name": "Check resend"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0758f733-6fa7-49b7-ae81-5d52f52f8373",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        992,
+        1168
+      ],
+      "id": "6f8b8c12-bb77-4012-b465-8d1745a4ac70",
+      "name": "Can resend?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78587a17-92c0-4605-80dd-dd683acfd5b3",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1184,
+        1264
+      ],
+      "id": "f4e7d152-8f21-45f5-9ad5-19c624b50031",
+      "name": "Reply: resend"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "action"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "code"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        960
+      ],
+      "id": "5bdcd94e-480f-4349-8132-abac7027b349",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9090967b-96bf-46bf-89ce-bc08b2255665",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "verify",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cc87e005-15da-4f1b-b606-cf0a9570a56e",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "resend_code",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        960
+      ],
+      "id": "d5d3c6c1-44df-4599-9e9b-98a3215d8845",
+      "name": "Route by action"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "qcAWFNC8AS5Fzjpp",
+          "mode": "list",
+          "cachedResultName": "Auth - Send code",
+          "cachedResultUrl": "/workflow/qcAWFNC8AS5Fzjpp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "email": "={{ $json.email }}",
+            "salt": "={{ $json.salt }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "salt",
+              "displayName": "salt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        1072
+      ],
+      "id": "3f2a0009-79f2-47ec-9672-df7f6eb400eb",
+      "name": "Run Send code"
+    }
+  ],
+  "connections": {
+    "Find user for verify": {
+      "main": [
+        [
+          {
+            "node": "Hash code attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash code attempt": {
+      "main": [
+        [
+          {
+            "node": "Check code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check code": {
+      "main": [
+        [
+          {
+            "node": "Save verification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save verification?": {
+      "main": [
+        [
+          {
+            "node": "Update verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update verification": {
+      "main": [
+        [
+          {
+            "node": "Reply: verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find user for resend": {
+      "main": [
+        [
+          {
+            "node": "Check resend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check resend": {
+      "main": [
+        [
+          {
+            "node": "Can resend?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can resend?": {
+      "main": [
+        [
+          {
+            "node": "Run Send code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: resend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route by action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by action": {
+      "main": [
+        [
+          {
+            "node": "Find user for verify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find user for resend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

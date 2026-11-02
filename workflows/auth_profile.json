@@ -1,0 +1,734 @@
+{
+  "id": "wlg2xGW2ATfMBP5Z",
+  "name": "Auth - Profile",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "vyPNJ9tlTBYlPWxc",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_hash",
+              "keyValue": "={{ $json.session_hash }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        720
+      ],
+      "id": "bd03f062-1a50-4e94-8c8b-1667a6cdafdb",
+      "name": "Find session (profile)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nif (!s.id || !s.user_id || !s.expires_at || new Date(s.expires_at) <= new Date()) {\n  return [{ json: { ok: false, message: 'You must be logged in to change your profile.' } }];\n}\nreturn [{ json: { ok: true, userId: s.user_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        720
+      ],
+      "id": "2ce6b0d4-a23d-4223-81ad-b8d11b69036e",
+      "name": "Check session (profile)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5521aab5-5a86-47aa-a177-b3186b63c10a",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        720
+      ],
+      "id": "8b2be5ad-72a2-40fb-aa6b-039e4001f0b4",
+      "name": "Is session valid? (profile)"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $('Check session (profile)').first().json.userId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        608
+      ],
+      "id": "6ef17925-4871-4d79-ad9d-e113791e63a4",
+      "name": "Find current user",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const user = $input.first().json;\nconst input = $('Trigger').first().json;\nif (!user.id) {\n  return [{ json: { ok: false, message: 'Account not found.' } }];\n}\n// an empty string means \"not provided\"\nconst given = (v) => v !== '';\nconst values = {\n  email: user.email,\n  interests: user.interests,\n  send_hour: user.send_hour,\n  timezone: user.timezone,\n  email_verified: user.email_verified === true,\n};\nlet emailChanged = false;\nlet changed = 0;\n\nif (given(input.email)) {\n  const email = input.email;\n  if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) {\n    return [{ json: { ok: false, message: 'Invalid email.' } }];\n  }\n  if (email !== user.email) {\n    values.email = email;\n    values.email_verified = false;\n    emailChanged = true;\n  }\n  changed++;\n}\n\nif (given(input.interests)) {\n  const topics = [...new Set(\n    input.interests.split(/[,;\\n]/).map((t) => t.toLowerCase().trim().replace(/\\s+/g, ' ')).filter(Boolean)\n  )];\n  if (topics.length === 0 || topics.length > 10) {\n    return [{ json: { ok: false, message: 'Give between 1 and 10 interests.' } }];\n  }\n  if (topics.some((t) => t.length > 40 || !/^[\\p{L}\\p{N} +#&.'-]+$/u.test(t))) {\n    return [{ json: { ok: false, message: 'Each interest must be a short topic (letters and numbers, 40 characters max).' } }];\n  }\n  values.interests = topics.join(', ');\n  changed++;\n}\n\nif (given(input.send_hour)) {\n  const m = input.send_hour.trim().match(/^([01]?\\d|2[0-3])(?::([0-5]\\d))?$/);\n  if (!m) {\n    return [{ json: { ok: false, message: 'Invalid send time. Use an hour between 0 and 23, for example 8 or 18:30.' } }];\n  }\n  values.send_hour = m[1].padStart(2, '0') + ':' + (m[2] || '00');\n  changed++;\n}\n\nif (given(input.timezone)) {\n  const tz = input.timezone.trim();\n  try {\n    new Intl.DateTimeFormat('en', { timeZone: tz });\n  } catch (e) {\n    return [{ json: { ok: false, message: 'Invalid timezone. Use an IANA name such as Europe/Paris.' } }];\n  }\n  values.timezone = tz;\n  changed++;\n}\n\nif (changed === 0) {\n  return [{ json: { ok: false, message: 'Nothing to update.' } }];\n}\nreturn [{ json: { ok: true, userId: user.id, salt: user.salt, emailChanged, values } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        608
+      ],
+      "id": "a84e5224-871a-4fdd-8160-b1258f239460",
+      "name": "Validate profile"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ae3a2de7-e223-4a11-8dc3-36fff78c3ca7",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1808,
+        608
+      ],
+      "id": "15652afa-d170-4774-bf4c-9cbad7076b9d",
+      "name": "Is profile valid?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.values.email }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        496
+      ],
+      "id": "27551646-0d38-4255-ba1a-bb7c5126f1c8",
+      "name": "Find email owner",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const owner = $input.first().json;\nconst { userId, salt, emailChanged, values } = $('Validate profile').first().json;\nif (owner.id && owner.id !== userId) {\n  return [{ json: { ok: false, message: 'This email is already used by another account.' } }];\n}\nreturn [{ json: { ok: true, userId, salt, emailChanged, values } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        496
+      ],
+      "id": "5efda7c7-c661-4bd2-abb6-5cdc09560b74",
+      "name": "Check email owner"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b78aa2a7-9f5b-44f7-9b61-f870e6fd1987",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2384,
+        496
+      ],
+      "id": "4280980d-2a39-4e9e-bbb1-9575f3a63941",
+      "name": "Is email free?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.userId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.values.email }}",
+            "interests": "={{ $json.values.interests }}",
+            "send_hour": "={{ $json.values.send_hour }}",
+            "timezone": "={{ $json.values.timezone }}",
+            "email_verified": "={{ $json.values.email_verified }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "interests",
+              "displayName": "interests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "send_hour",
+              "displayName": "send_hour",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_verified",
+              "displayName": "email_verified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2576,
+        400
+      ],
+      "id": "0f8e3ce5-b42d-4f9a-8e1a-f9706d7968ff",
+      "name": "Update profile"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cc22bdc3-bccf-4e74-a741-6a65a4cc0f73",
+              "leftValue": "={{ $('Check email owner').first().json.emailChanged }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2768,
+        400
+      ],
+      "id": "04a07278-7736-42a0-a540-f72307c1b0d5",
+      "name": "Email changed?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6feb4e95-7807-40b7-a514-ce700b20685a",
+              "name": "id",
+              "value": "={{ $('Check email owner').first().json.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "7df3091e-7db9-4d29-b996-239f8be8cc78",
+              "name": "email",
+              "value": "={{ $('Check email owner').first().json.values.email }}",
+              "type": "string"
+            },
+            {
+              "id": "0dc18cf1-6a8b-4d8f-8c9a-8fe489b0dea4",
+              "name": "salt",
+              "value": "={{ $('Check email owner').first().json.salt }}",
+              "type": "string"
+            },
+            {
+              "id": "3ffe43ad-22cf-4a61-ad5e-c2dc39a1c901",
+              "name": "message",
+              "value": "=Profile updated. The new email address {{ $('Check email owner').first().json.values.email }} must be verified: a code was sent to it (valid 15 minutes).",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2960,
+        288
+      ],
+      "id": "6ad1eb1a-e695-49a2-a21e-de60c8b58919",
+      "name": "Email change target"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4376300a-dae8-43b8-9a37-756ce593f8ea",
+              "name": "message",
+              "value": "=Profile updated. Email: {{ $('Check email owner').first().json.values.email }}. Interests: {{ $('Check email owner').first().json.values.interests || 'none yet' }}. Send time: {{ $('Check email owner').first().json.values.send_hour || 'not set' }}. Timezone: {{ $('Check email owner').first().json.values.timezone || 'not set' }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2960,
+        496
+      ],
+      "id": "4f0ddaa5-f83f-4f69-971f-c0d6c48c1f24",
+      "name": "Reply: profile updated"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "40d8941b-bc44-4e52-86f0-e04beeb9fd08",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2576,
+        720
+      ],
+      "id": "b1831549-1cca-4f27-bf7f-938744eead02",
+      "name": "Reply: profile refused"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "interests"
+            },
+            {
+              "name": "send_hour"
+            },
+            {
+              "name": "timezone"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        720
+      ],
+      "id": "03a38dd0-9be6-43ae-8937-bf090d17cbe2",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "qcAWFNC8AS5Fzjpp",
+          "mode": "list",
+          "cachedResultName": "Auth - Send code",
+          "cachedResultUrl": "/workflow/qcAWFNC8AS5Fzjpp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "email": "={{ $json.email }}",
+            "salt": "={{ $json.salt }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "salt",
+              "displayName": "salt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3152,
+        288
+      ],
+      "id": "2ffe95d7-cc39-4f94-9af8-087f79b647f8",
+      "name": "Run Send code"
+    }
+  ],
+  "connections": {
+    "Find session (profile)": {
+      "main": [
+        [
+          {
+            "node": "Check session (profile)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check session (profile)": {
+      "main": [
+        [
+          {
+            "node": "Is session valid? (profile)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is session valid? (profile)": {
+      "main": [
+        [
+          {
+            "node": "Find current user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: profile refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find current user": {
+      "main": [
+        [
+          {
+            "node": "Validate profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate profile": {
+      "main": [
+        [
+          {
+            "node": "Is profile valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is profile valid?": {
+      "main": [
+        [
+          {
+            "node": "Find email owner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: profile refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find email owner": {
+      "main": [
+        [
+          {
+            "node": "Check email owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check email owner": {
+      "main": [
+        [
+          {
+            "node": "Is email free?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is email free?": {
+      "main": [
+        [
+          {
+            "node": "Update profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: profile refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update profile": {
+      "main": [
+        [
+          {
+            "node": "Email changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email changed?": {
+      "main": [
+        [
+          {
+            "node": "Email change target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: profile updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email change target": {
+      "main": [
+        [
+          {
+            "node": "Run Send code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find session (profile)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

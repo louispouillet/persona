@@ -71,6 +71,22 @@
             {
               "name": "language",
               "type": "string"
+            },
+            {
+              "name": "email_verified",
+              "type": "boolean"
+            },
+            {
+              "name": "verify_code_hash",
+              "type": "string"
+            },
+            {
+              "name": "verify_expires",
+              "type": "date"
+            },
+            {
+              "name": "verify_attempts",
+              "type": "number"
             }
           ]
         },
@@ -95,7 +111,7 @@
         "columns": {
           "column": [
             {
-              "name": "session_id",
+              "name": "session_hash",
               "type": "string"
             },
             {

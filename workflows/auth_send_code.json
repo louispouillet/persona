@@ -1,0 +1,272 @@
+{
+  "id": "qcAWFNC8AS5Fzjpp",
+  "name": "Auth - Send code",
+  "nodes": [
+    {
+      "parameters": {
+        "action": "generate",
+        "dataPropertyName": "code_seed",
+        "encodingType": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        0
+      ],
+      "id": "ba8037cc-76e0-48a7-af4c-edcfc0317a8e",
+      "name": "Random seed"
+    },
+    {
+      "parameters": {
+        "jsCode": "const user = $input.first().json;\n// 48 random bits from the Crypto node, reduced to 6 digits\nconst seed = parseInt(user.code_seed.slice(0, 12), 16);\nreturn [{ json: {\n  userId: user.id,\n  email: user.email,\n  salt: user.salt,\n  message: user.message,\n  code: String(seed % 1000000).padStart(6, '0'),\n  expires: new Date(Date.now() + 15 * 60 * 1000).toISOString(),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2272,
+        0
+      ],
+      "id": "ebad4965-39d2-45d4-98f5-0bf3127709a8",
+      "name": "Make code"
+    },
+    {
+      "parameters": {
+        "type": "SHA512",
+        "value": "={{ $json.salt + $json.code }}",
+        "dataPropertyName": "code_hash"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        0
+      ],
+      "id": "ac7237f3-6853-4ebb-a512-2dabb449a072",
+      "name": "Hash code"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.userId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verify_code_hash": "={{ $json.code_hash }}",
+            "verify_expires": "={{ $json.expires }}",
+            "verify_attempts": 0
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "verify_code_hash",
+              "displayName": "verify_code_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_expires",
+              "displayName": "verify_expires",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_attempts",
+              "displayName": "verify_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2624,
+        0
+      ],
+      "id": "81b37003-9330-460e-aa45-a63c31952c02",
+      "name": "Store code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "lilian.davezac@gmail.com",
+        "toEmail": "={{ $('Make code').first().json.email }}",
+        "subject": "Persona : ton code de vérification / your verification code",
+        "emailFormat": "text",
+        "text": "=Ton code de vérification : {{ $('Make code').first().json.code }}\nValable 15 minutes.\n\nYour verification code: {{ $('Make code').first().json.code }}\nValid for 15 minutes.\n\nSi tu n'es pas à l'origine de cette demande, ignore ce mail.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2800,
+        0
+      ],
+      "id": "86311dc0-a260-4a1f-9407-fd90fd2ff07d",
+      "name": "Send code email",
+      "webhookId": "29cf5aca-85ec-4f4d-92bc-3428e0fc7d0a",
+      "credentials": {
+        "smtp": {
+          "id": "BYJasufnri34EZ0v",
+          "name": "smtp"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9c7dd63-a709-4645-bc47-c24674cd7e07",
+              "name": "message",
+              "value": "={{ $json.error ? 'The verification email could not be sent. Ask for a new code in a moment.' : $('Make code').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2976,
+        0
+      ],
+      "id": "84c46b69-286e-45b1-9d05-0fc1b2b653e7",
+      "name": "Reply: code sent"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "salt"
+            },
+            {
+              "name": "message"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        0
+      ],
+      "id": "2c1dbacf-8225-4a71-91c6-413ec780e6dc",
+      "name": "Trigger"
+    }
+  ],
+  "connections": {
+    "Random seed": {
+      "main": [
+        [
+          {
+            "node": "Make code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make code": {
+      "main": [
+        [
+          {
+            "node": "Hash code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash code": {
+      "main": [
+        [
+          {
+            "node": "Store code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store code": {
+      "main": [
+        [
+          {
+            "node": "Send code email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send code email": {
+      "main": [
+        [
+          {
+            "node": "Reply: code sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Random seed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

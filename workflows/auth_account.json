@@ -1,0 +1,582 @@
+{
+  "id": "ubYnT7Ut97D0rnq7",
+  "name": "Auth - Account",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            },
+            {
+              "name": "password"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        96
+      ],
+      "id": "ea712aed-f2c4-4f5a-992e-0f0f956ab7ad",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "vyPNJ9tlTBYlPWxc",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_hash",
+              "keyValue": "={{ $json.session_hash }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        96
+      ],
+      "id": "43b39eec-52f6-42a9-a16f-436e4962f7dd",
+      "name": "Find session",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nif (!s.id || !s.user_id || !s.expires_at || new Date(s.expires_at) <= new Date()) {\n  return [{ json: { ok: false, message: 'You must be logged in to delete your account.' } }];\n}\nreturn [{ json: { ok: true, userId: s.user_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        96
+      ],
+      "id": "40d26877-8abe-4962-9139-c71ecf4517fa",
+      "name": "Check session"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0c423060-62cb-4e4d-8dad-4e2ac1a6ab96",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        96
+      ],
+      "id": "3d8aafb2-2fba-4a59-a665-c32402258f19",
+      "name": "Is session valid?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f66ec2e2-18f8-42c9-97e6-def7b07a0987",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        400
+      ],
+      "id": "25da7ab6-d454-4b29-b941-cccc95b18010",
+      "name": "Reply: refused"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Check session').first().json.userId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "efb4e445-7b60-404c-a764-20429227a695",
+      "name": "Find account user",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "type": "SHA512",
+        "value": "={{ ($json.salt || '') + $('Trigger').first().json.password }}",
+        "dataPropertyName": "candidate_hash"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "da2129ae-e008-4f1a-9be6-0a21a754057d",
+      "name": "Hash password attempt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const user = $('Find account user').first().json;\nconst candidate = $input.first().json.candidate_hash;\nconst refused = 'Incorrect password. The account was not deleted.';\nif (!user.id) return [{ json: { ok: false, message: 'Account not found.' } }];\nif (user.locked_until && new Date(user.locked_until) > new Date()) {\n  return [{ json: { ok: false, userId: user.id, failed: user.failed_logins || 0, lockedUntil: user.locked_until, message: refused } }];\n}\nconst ok = candidate === user.password_hash;\n// once a lock has expired, start a fresh series of attempts\nconst previous = (user.failed_logins || 0) >= 5 ? 0 : (user.failed_logins || 0);\nconst failed = ok ? 0 : previous + 1;\nconst lockedUntil = !ok && failed >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;\nreturn [{ json: { ok, userId: user.id, failed, lockedUntil, message: ok ? 'Account deleted.' : refused } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "2ee7f653-81f6-4e4e-b9d4-6591dcba1685",
+      "name": "Check password"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3898b074-0a8d-4072-bbe6-e05c2dce9985",
+              "leftValue": "={{ $json.userId !== undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "d2ebdaa7-0511-468b-8ce0-8c1fe08b1ca4",
+      "name": "User found?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.userId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "failed_logins": "={{ $json.failed }}",
+            "locked_until": "={{ $json.lockedUntil }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "failed_logins",
+              "displayName": "failed_logins",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "locked_until",
+              "displayName": "locked_until",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        -100
+      ],
+      "id": "5034aaae-3333-46e3-bcdd-794c643c38c3",
+      "name": "Update attempts",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6d7fe6c7-8a86-4c20-b8e9-25c20d8bf78b",
+              "leftValue": "={{ $('Check password').first().json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        -100
+      ],
+      "id": "79303efb-33cc-4d34-9186-75878786618e",
+      "name": "Password ok?"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "vyPNJ9tlTBYlPWxc",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Check password').first().json.userId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        -200
+      ],
+      "id": "38eae8c3-9036-4c3a-99df-251aaf3d19dc",
+      "name": "Delete user sessions",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Check password').first().json.userId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        -200
+      ],
+      "id": "4b56d343-fdfb-4b80-b5b9-9bff1896a2e4",
+      "name": "Delete user",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7eee52fb-7ddb-4dfd-a729-bc9b794b96dc",
+              "name": "message",
+              "value": "Account deleted. Your data and sessions were removed.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2496,
+        -200
+      ],
+      "id": "af8a9a7d-ee8d-42a6-b4f5-376a3f9c73fe",
+      "name": "Reply: account deleted"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "53e268c9-39c7-465c-b142-b9b8be78a41c",
+              "name": "message",
+              "value": "={{ $('Check password').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "213974bf-a642-4f6e-86a5-e1a1880af649",
+      "name": "Reply: wrong password"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find session": {
+      "main": [
+        [
+          {
+            "node": "Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check session": {
+      "main": [
+        [
+          {
+            "node": "Is session valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is session valid?": {
+      "main": [
+        [
+          {
+            "node": "Find account user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find account user": {
+      "main": [
+        [
+          {
+            "node": "Hash password attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash password attempt": {
+      "main": [
+        [
+          {
+            "node": "Check password",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check password": {
+      "main": [
+        [
+          {
+            "node": "User found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User found?": {
+      "main": [
+        [
+          {
+            "node": "Update attempts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: wrong password",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update attempts": {
+      "main": [
+        [
+          {
+            "node": "Password ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Password ok?": {
+      "main": [
+        [
+          {
+            "node": "Delete user sessions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: wrong password",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete user sessions": {
+      "main": [
+        [
+          {
+            "node": "Delete user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete user": {
+      "main": [
+        [
+          {
+            "node": "Reply: account deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

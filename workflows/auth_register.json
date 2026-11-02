@@ -1,0 +1,666 @@
+{
+  "id": "wzIHOx7KGOZROTGn",
+  "name": "Auth - Register",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const { email, password, language, consent } = $('Trigger').first().json;\n\nconst ISO_639_1 = new Set(\n  'aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy da de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu hy hz ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln lo lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti tk tl tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu'.split(' ')\n);\n\nif (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) {\n  return [{ json: { ok: false, message: 'Invalid email.' } }];\n}\nif (!password || password.length < 8) {\n  return [{ json: { ok: false, message: 'Password too short (minimum 8 characters).' } }];\n}\nif (!ISO_639_1.has(language)) {\n  return [{ json: { ok: false, message: 'Invalid language. Use a two-letter ISO 639-1 code such as \"fr\" or \"en\".' } }];\n}\nif (consent !== true) {\n  return [{ json: { ok: false, message: 'Consent required. Explain that the email, interests and send time are stored to send the newsletter and that the account can be deleted at any time, then ask the user to accept explicitly.' } }];\n}\nreturn [{ json: { ok: true, email, language } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        160
+      ],
+      "id": "8eb91c41-9b5b-4077-9d66-57ff8aaf8f15",
+      "name": "Validate input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d8330148-2a21-47c8-b0e4-89b565ff6b4c",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        160
+      ],
+      "id": "130ed5d2-595c-490a-9446-3133437c5287",
+      "name": "Is input valid?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b802943-b63f-41ce-8230-cd7825cf4ea4",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        256
+      ],
+      "id": "4eb7b08c-85d0-450b-a8fd-d219962e4f28",
+      "name": "Reply: invalid input"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        48
+      ],
+      "id": "d216db41-0c0d-4757-ad2e-ebc239d4c82b",
+      "name": "Find user by email",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "771a6a5e-c2d1-4cf6-8f50-24fc640ccb8c",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        48
+      ],
+      "id": "77bd05e5-6585-4de3-be3b-22c66980a7b6",
+      "name": "Is email available?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b802943-b63f-41ce-8230-cd7825cf4ea4",
+              "name": "message",
+              "value": "=An account already exists with this email.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        144
+      ],
+      "id": "c844cbe5-aff8-41e8-9323-4dae502223bd",
+      "name": "Reply: email taken"
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "dataPropertyName": "salt",
+        "encodingType": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        -48
+      ],
+      "id": "fc71e317-2009-4294-aaf5-e33143e3ae18",
+      "name": "Generate salt"
+    },
+    {
+      "parameters": {
+        "type": "SHA512",
+        "value": "={{ $json.salt + $('Trigger').first().json.password }}",
+        "dataPropertyName": "password_hash"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -48
+      ],
+      "id": "5950c07d-288b-41b4-aba0-7c175805f12d",
+      "name": "Hash password"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "iwAnSS8WkOpD3WPF",
+          "mode": "list",
+          "cachedResultName": "users",
+          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "consent": true,
+            "unsubscribed": false,
+            "email": "={{ $('Validate input').first().json.email }}",
+            "password_hash": "={{ $json.password_hash }}",
+            "salt": "={{ $json.salt }}",
+            "failed_logins": 0,
+            "language": "={{ $('Validate input').first().json.language }}",
+            "email_verified": false,
+            "verify_attempts": 0,
+            "consent_date": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "password_hash",
+              "displayName": "password_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "salt",
+              "displayName": "salt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "interests",
+              "displayName": "interests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "send_hour",
+              "displayName": "send_hour",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "consent",
+              "displayName": "consent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "consent_date",
+              "displayName": "consent_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "unsubscribed",
+              "displayName": "unsubscribed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "failed_logins",
+              "displayName": "failed_logins",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "locked_until",
+              "displayName": "locked_until",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_sent",
+              "displayName": "last_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_verified",
+              "displayName": "email_verified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_code_hash",
+              "displayName": "verify_code_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_expires",
+              "displayName": "verify_expires",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "verify_attempts",
+              "displayName": "verify_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1744,
+        -48
+      ],
+      "id": "b99c5826-edcf-4096-92c7-ecf15c555cfd",
+      "name": "Create user"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffe51608-c2ed-4ab8-b6c7-b5a73a83b6ae",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "702c1c12-1c66-4ae5-84ed-7daf546e300a",
+              "name": "email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "f16b4bc6-9255-4225-951b-f4f637d94331",
+              "name": "salt",
+              "value": "={{ $json.salt }}",
+              "type": "string"
+            },
+            {
+              "id": "bf6725d3-f423-4681-bb86-b738d111e7e3",
+              "name": "message",
+              "value": "=Account created. A verification code was sent to {{ $json.email }} (valid 15 minutes). The email must be verified before logging in.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1920,
+        -48
+      ],
+      "id": "8650a1c4-7ff8-448c-9dba-703cae1649be",
+      "name": "Registered"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "email"
+            },
+            {
+              "name": "password"
+            },
+            {
+              "name": "language"
+            },
+            {
+              "name": "consent"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        160
+      ],
+      "id": "164da9f0-5a85-4ce5-8de4-5c73949f4734",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "qcAWFNC8AS5Fzjpp",
+          "mode": "list",
+          "cachedResultName": "Auth - Send code",
+          "cachedResultUrl": "/workflow/qcAWFNC8AS5Fzjpp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "email": "={{ $json.email }}",
+            "salt": "={{ $json.salt }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "salt",
+              "displayName": "salt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2112,
+        -48
+      ],
+      "id": "d2372a80-44a0-4a74-a5a2-a61b2483bb58",
+      "name": "Run Send code"
+    }
+  ],
+  "connections": {
+    "Validate input": {
+      "main": [
+        [
+          {
+            "node": "Is input valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is input valid?": {
+      "main": [
+        [
+          {
+            "node": "Find user by email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: invalid input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find user by email": {
+      "main": [
+        [
+          {
+            "node": "Is email available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is email available?": {
+      "main": [
+        [
+          {
+            "node": "Generate salt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: email taken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate salt": {
+      "main": [
+        [
+          {
+            "node": "Hash password",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash password": {
+      "main": [
+        [
+          {
+            "node": "Create user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create user": {
+      "main": [
+        [
+          {
+            "node": "Registered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registered": {
+      "main": [
+        [
+          {
+            "node": "Run Send code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}
