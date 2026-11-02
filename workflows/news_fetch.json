@@ -322,6 +322,35 @@
       ],
       "name": "Save to articles",
       "id": "f652cb4e-4e64-4038-aac0-d4b41f0c9ca8"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "b6JgUO9J2q3Ihvtc",
+          "cachedResultName": "News Classify"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        100
+      ],
+      "name": "Classify new articles",
+      "id": "a7f3a393-2ae1-4238-ab8b-41627586b694"
     }
   ],
   "connections": {
@@ -445,6 +474,17 @@
         [
           {
             "node": "Save to articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to articles": {
+      "main": [
+        [
+          {
+            "node": "Classify new articles",
             "type": "main",
             "index": 0
           }
