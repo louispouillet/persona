@@ -1,0 +1,418 @@
+{
+  "id": "XSLEhwxtrzRfdVUF",
+  "name": "Newsletter Send",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "user_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Called with user_id",
+      "id": "bac43cf1-2b41-4add-bcc6-7b31f8a404d8"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "name": "Run manually",
+      "id": "973d80cb-f3ce-4bb6-97fc-d310bfa4bf83"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84348a3f-7ceb-46f9-9ede-c436fb860f24",
+              "name": "user_id",
+              "value": 1,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        208
+      ],
+      "name": "Test user",
+      "id": "74fac02d-57d3-4eca-8f74-eef42f10fda5"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "lWMcpOis6lQMPXZ3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/lWMcpOis6lQMPXZ3",
+          "cachedResultName": "Newsletter Build"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.user_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        112
+      ],
+      "name": "Build newsletter",
+      "id": "ea7918fb-3453-4d3a-b9db-53fad0af6c17"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cbabbbc6-d834-4d51-a0ba-20cb5494a50c",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        112
+      ],
+      "name": "Nothing to send?",
+      "id": "aaa7a0c0-fd77-4430-9dba-f50f4f759978"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a360d83d-1b20-41c0-bfae-87a2025e861c",
+              "name": "sent",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "c1586651-d5ed-472a-8575-5feb1384faba",
+              "name": "user_id",
+              "value": "={{ $json.user_id }}",
+              "type": "number"
+            },
+            {
+              "id": "c6095e23-d465-46f3-a526-e4ca82716f01",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        0
+      ],
+      "name": "Not sent",
+      "id": "91c9d9e1-d82e-4ef6-86e0-9ca5da74b11e"
+    },
+    {
+      "parameters": {
+        "fromEmail": "NewsLetter <louis.vags@gmail.com>",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "both",
+        "text": "={{ $json.text }}",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        208
+      ],
+      "name": "Send email",
+      "id": "e0195141-8af9-4761-8451-408eb60d7fb6",
+      "webhookId": "78d1f6db-d15d-4819-a780-65ecc85e59e7",
+      "credentials": {
+        "smtp": {
+          "id": "PYYtKOVatUEBaomI",
+          "name": "smtp"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $('Build newsletter').item.json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_sent": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "last_sent",
+              "displayName": "last_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        208
+      ],
+      "name": "Update last_sent",
+      "id": "54a5ab54-78e8-42e4-bb8b-4d394f0877f0"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96524c3f-2206-4229-8fb4-557cfd13212f",
+              "name": "sent",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "7badbc63-afef-4d73-84d3-5c1621e0ad5d",
+              "name": "user_id",
+              "value": "={{ $('Build newsletter').item.json.user_id }}",
+              "type": "number"
+            },
+            {
+              "id": "88880115-2fa0-4b82-b25f-a02e572503f2",
+              "name": "article_count",
+              "value": "={{ $('Build newsletter').item.json.article_ids.length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1328,
+        208
+      ],
+      "name": "Sent",
+      "id": "ac3957c7-94c7-4ac9-9e97-2c5822496054"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c2c4952a-d406-44aa-bf52-81fc3309b125",
+              "name": "sent",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "54348392-9396-47c0-bc14-7c8b76be0a7d",
+              "name": "user_id",
+              "value": "={{ $('Build newsletter').item.json.user_id }}",
+              "type": "number"
+            },
+            {
+              "id": "0c9e9060-5795-4870-b071-787662d5adbf",
+              "name": "reason",
+              "value": "send_failed",
+              "type": "string"
+            },
+            {
+              "id": "9045aaea-1460-40b2-b169-5cef0b69cc31",
+              "name": "error",
+              "value": "={{ $json.error?.message || $json.error || 'unknown error' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        400
+      ],
+      "name": "Send failed",
+      "id": "1181f83c-939a-45f1-88d8-5d567e11fb40"
+    }
+  ],
+  "connections": {
+    "Called with user_id": {
+      "main": [
+        [
+          {
+            "node": "Build newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Test user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test user": {
+      "main": [
+        [
+          {
+            "node": "Build newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build newsletter": {
+      "main": [
+        [
+          {
+            "node": "Nothing to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nothing to send?": {
+      "main": [
+        [
+          {
+            "node": "Not sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Update last_sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update last_sent": {
+      "main": [
+        [
+          {
+            "node": "Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

@@ -112,7 +112,7 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        892,
+        896,
         112
       ],
       "name": "Recent articles",
@@ -126,7 +126,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
+        1104,
         112
       ],
       "name": "Pick best articles",
@@ -142,7 +142,7 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        1544,
+        1552,
         112
       ],
       "name": "Write newsletter",
@@ -162,7 +162,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
       "position": [
-        1464,
+        1472,
         320
       ],
       "name": "Gemini",
@@ -182,7 +182,7 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1640,
+        1648,
         320
       ],
       "name": "Newsletter format",
@@ -190,12 +190,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const { user, articles } = $('Pick best articles').first().json;\nconst ai = $json.output;\nconst lang = ['fr', 'en'].includes(user.language) ? user.language : 'en';\nconst LABELS = {\n  fr: { read: \"Lire l'article\", footer: 'Vous recevez cette newsletter car vous êtes inscrit à Persona. Pour vous désinscrire, écrivez « désinscription » au chatbot Persona.' },\n  en: { read: 'Read the article', footer: 'You receive this newsletter because you signed up to Persona. To unsubscribe, write \"unsubscribe\" to the Persona chatbot.' },\n};\nconst label = LABELS[lang];\n\nconst escape = (text) => String(text ?? '')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')\n  .replace(/\"/g, '&quot;').replace(/'/g, '&#39;');\nconst safeUrl = (url) => (/^https?:\\/\\//i.test(url || '') ? url : '#');\n\nconst byId = new Map(articles.map(a => [a.id, a]));\nconst written = new Map((ai.items || []).filter(i => byId.has(i.id)).map(i => [i.id, i]));\nconst entries = [...written.keys(), ...articles.map(a => a.id).filter(id => !written.has(id))]\n  .map(id => ({ ...byId.get(id), title: written.get(id)?.title || byId.get(id).title, summary: written.get(id)?.summary || byId.get(id).summary }));\n\nconst date = new Date().toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', timeZone: user.timezone || 'Europe/Paris' });\n\nconst cards = entries.map(a => `\n  <tr><td style=\"padding:0 0 24px 0;\">\n    <p style=\"margin:0 0 6px 0;font:600 12px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;\">${escape(a.source)} · ${escape(a.categories.split(',').join(' · '))}</p>\n    <p style=\"margin:0 0 8px 0;font:700 18px/1.3 Georgia,serif;color:#111827;\"><a href=\"${escape(safeUrl(a.url))}\" style=\"color:#111827;text-decoration:none;\">${escape(a.title)}</a></p>\n    <p style=\"margin:0 0 10px 0;font:15px/1.55 Arial,sans-serif;color:#374151;\">${escape(a.summary)}</p>\n    <a href=\"${escape(safeUrl(a.url))}\" style=\"font:600 14px Arial,sans-serif;color:#2f5bea;text-decoration:none;\">${escape(label.read)} →</a>\n  </td></tr>`).join('');\n\nconst html = `<!doctype html>\n<html lang=\"${lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escape(ai.subject)}</title></head>\n<body style=\"margin:0;padding:0;background:#f3f4f6;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:24px 12px;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;background:#ffffff;border-radius:8px;\">\n    <tr><td style=\"padding:28px 28px 8px 28px;\">\n      <p style=\"margin:0;font:700 22px Georgia,serif;color:#2f5bea;\">Persona</p>\n      <p style=\"margin:4px 0 0 0;font:13px Arial,sans-serif;color:#6b7280;\">${escape(date)}</p>\n    </td></tr>\n    <tr><td style=\"padding:12px 28px 20px 28px;font:16px/1.55 Arial,sans-serif;color:#111827;\">${escape(ai.intro)}</td></tr>\n    <tr><td style=\"padding:0 28px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">${cards}</table></td></tr>\n    <tr><td style=\"padding:16px 28px 28px 28px;border-top:1px solid #e5e7eb;font:12px/1.5 Arial,sans-serif;color:#6b7280;\">${escape(label.footer)}</td></tr>\n  </table>\n</td></tr></table>\n</body></html>`;\n\nconst text = [\n  `${date}`, '', ai.intro, '',\n  ...entries.map(a => `• ${a.title} (${a.source})\\n  ${a.summary}\\n  ${safeUrl(a.url)}\\n`),\n  '—', label.footer,\n].join('\\n');\n\nreturn [{ json: { user_id: user.id, email: user.email, subject: ai.subject, html, text, article_ids: entries.map(a => a.id) } }];\n"
+        "jsCode": "const { user, articles } = $('Pick best articles').first().json;\nconst ai = $json.output;\nconst lang = ['fr', 'en'].includes(user.language) ? user.language : 'en';\nconst LABELS = {\n  fr: { read: \"Lire l'article\", footer: 'Vous recevez cette newsletter car vous êtes inscrit. Pour vous désinscrire, écrivez « désinscription » au chatbot.' },\n  en: { read: 'Read the article', footer: 'You receive this newsletter because you signed up. To unsubscribe, write \"unsubscribe\" to the chatbot.' },\n};\nconst label = LABELS[lang];\n\nconst escape = (text) => String(text ?? '')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')\n  .replace(/\"/g, '&quot;').replace(/'/g, '&#39;');\nconst safeUrl = (url) => (/^https?:\\/\\//i.test(url || '') ? url : '#');\n\nconst byId = new Map(articles.map(a => [a.id, a]));\nconst written = new Map((ai.items || []).filter(i => byId.has(i.id)).map(i => [i.id, i]));\nconst entries = [...written.keys(), ...articles.map(a => a.id).filter(id => !written.has(id))]\n  .map(id => ({ ...byId.get(id), title: written.get(id)?.title || byId.get(id).title, summary: written.get(id)?.summary || byId.get(id).summary }));\n\nconst date = new Date().toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', timeZone: user.timezone || 'Europe/Paris' });\n\nconst cards = entries.map(a => `\n  <tr><td style=\"padding:0 0 24px 0;\">\n    <p style=\"margin:0 0 6px 0;font:600 12px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;\">${escape(a.source)} · ${escape(a.categories.split(',').join(' · '))}</p>\n    <p style=\"margin:0 0 8px 0;font:700 18px/1.3 Georgia,serif;color:#111827;\"><a href=\"${escape(safeUrl(a.url))}\" style=\"color:#111827;text-decoration:none;\">${escape(a.title)}</a></p>\n    <p style=\"margin:0 0 10px 0;font:15px/1.55 Arial,sans-serif;color:#374151;\">${escape(a.summary)}</p>\n    <a href=\"${escape(safeUrl(a.url))}\" style=\"font:600 14px Arial,sans-serif;color:#2f5bea;text-decoration:none;\">${escape(label.read)} →</a>\n  </td></tr>`).join('');\n\nconst html = `<!doctype html>\n<html lang=\"${lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escape(ai.subject)}</title></head>\n<body style=\"margin:0;padding:0;background:#f3f4f6;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:24px 12px;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;background:#ffffff;border-radius:8px;\">\n    <tr><td style=\"padding:28px 28px 8px 28px;\">\n      <p style=\"margin:0;font:700 22px Georgia,serif;color:#2f5bea;\">NewsLetter</p>\n      <p style=\"margin:4px 0 0 0;font:13px Arial,sans-serif;color:#6b7280;\">${escape(date)}</p>\n    </td></tr>\n    <tr><td style=\"padding:12px 28px 20px 28px;font:16px/1.55 Arial,sans-serif;color:#111827;\">${escape(ai.intro)}</td></tr>\n    <tr><td style=\"padding:0 28px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">${cards}</table></td></tr>\n    <tr><td style=\"padding:16px 28px 28px 28px;border-top:1px solid #e5e7eb;font:12px/1.5 Arial,sans-serif;color:#6b7280;\">${escape(label.footer)}</td></tr>\n  </table>\n</td></tr></table>\n</body></html>`;\n\nconst text = [\n  `${date}`, '', ai.intro, '',\n  ...entries.map(a => `• ${a.title} (${a.source})\\n  ${a.summary}\\n  ${safeUrl(a.url)}\\n`),\n  '—', label.footer,\n].join('\\n');\n\nreturn [{ json: { user_id: user.id, email: user.email, subject: ai.subject, html, text, article_ids: entries.map(a => a.id) } }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1784,
+        1792,
         112
       ],
       "name": "Render email",
@@ -258,8 +258,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        892,
-        312
+        896,
+        320
       ],
       "name": "User not found",
       "id": "b6f40edd-1e22-407d-a9a4-1b6c26282572"
@@ -291,7 +291,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1332,
+        1344,
         112
       ],
       "name": "Has articles?",
@@ -327,7 +327,7 @@
       "typeVersion": 3.4,
       "position": [
         1552,
-        312
+        320
       ],
       "name": "No new articles",
       "id": "bc58dd36-0853-4591-8310-74ca6d20cdbd"
