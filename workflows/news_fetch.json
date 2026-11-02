@@ -1,0 +1,459 @@
+{
+  "id": "R0KruwAGBfP5pXid",
+  "name": "News Fetch",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Every hour",
+      "id": "2467e9a9-0629-4c4a-9e5e-149b3f3d36ff"
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per RSS source. To add a source, add a line.\nconst sources = [\n  { name: 'BBC News',    url: 'https://feeds.bbci.co.uk/news/rss.xml',  language: 'en' },\n  { name: 'Le Monde',    url: 'https://www.lemonde.fr/rss/une.xml',     language: 'fr' },\n  { name: 'TechCrunch',  url: 'https://techcrunch.com/feed/',           language: 'en' },\n  { name: 'The Verge',   url: 'https://www.theverge.com/rss/index.xml', language: 'en' },\n  { name: 'France Info', url: 'https://www.francetvinfo.fr/titres.rss', language: 'fr' },\n];\n\nreturn sources.map(source => ({ json: source }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "RSS sources",
+      "id": "b9735862-aec8-45db-b58a-4804d044ca53"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Read RSS",
+      "onError": "continueRegularOutput",
+      "id": "92da2ff9-af90-43f9-a16a-101ad258bbc3"
+    },
+    {
+      "parameters": {
+        "url": "https://hn.algolia.com/api/v1/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "tags",
+              "value": "front_page"
+            },
+            {
+              "name": "hitsPerPage",
+              "value": "30"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ],
+      "name": "Hacker News API",
+      "onError": "continueRegularOutput",
+      "id": "90b01830-520a-4cc5-9163-33064b03de12"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "hits",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        660,
+        200
+      ],
+      "name": "One item per story",
+      "id": "f3673613-702b-494a-8b1b-0066b0384384"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2b57972a-b1a5-4c8d-a560-d7c82c5f3556",
+              "name": "url",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "ecae522a-f815-4aca-9886-3efa9021b069",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "1c37d75a-366c-4d56-9eb9-d91ce6b4e6d6",
+              "name": "source",
+              "value": "={{ $('RSS sources').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "a4732463-0439-4551-896e-c8b3a33382de",
+              "name": "language",
+              "value": "={{ $('RSS sources').item.json.language }}",
+              "type": "string"
+            },
+            {
+              "id": "ab72e06b-4065-496b-94c7-db95b965210b",
+              "name": "published_at",
+              "value": "={{ $json.isoDate }}",
+              "type": "string"
+            },
+            {
+              "id": "3a9b82bb-cd44-4b8f-9a20-83842ff39d37",
+              "name": "content",
+              "value": "={{ ($json.contentSnippet || '').slice(0, 1000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        0
+      ],
+      "name": "Normalize RSS",
+      "id": "ff14c1cc-d21f-48f6-a352-30f206824b81"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f109ffbb-d228-46ca-8d76-ba7cbf01f32d",
+              "name": "url",
+              "value": "={{ $json.url || 'https://news.ycombinator.com/item?id=' + $json.objectID }}",
+              "type": "string"
+            },
+            {
+              "id": "9347f026-3ae8-4f9b-aef7-cdcf2ad3fa00",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "1204b384-a514-403b-8b14-e2c0e5841d63",
+              "name": "source",
+              "value": "Hacker News",
+              "type": "string"
+            },
+            {
+              "id": "1d261b0c-1020-44b3-9b66-9490d93a9548",
+              "name": "language",
+              "value": "en",
+              "type": "string"
+            },
+            {
+              "id": "e877f330-07a5-47d6-9567-63e3b26651f4",
+              "name": "published_at",
+              "value": "={{ $json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "1f42d9ae-8d30-4183-adb1-e7fe05c33f0b",
+              "name": "content",
+              "value": "={{ ($json.story_text || '').replace(/<[^>]*>/g, ' ').replace(/&#x2F;/g, '/').replace(/&#x27;/g, \"'\").replace(/&quot;/g, '\"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&').trim().slice(0, 1000) || 'Hacker News: ' + $json.points + ' points, ' + $json.num_comments + ' comments' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        200
+      ],
+      "name": "Normalize Hacker News",
+      "id": "8c80de6e-8c5c-4688-8754-d0e78eddc2e9"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1100,
+        100
+      ],
+      "name": "All articles",
+      "id": "8c3d958a-91bc-4b85-92fc-6aa166403213"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "363eaa93-0002-42f3-b8d6-a11fee180a6d",
+              "leftValue": "={{ $json.url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4627c300-3268-4b5b-bc88-b8f4a731a302",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        100
+      ],
+      "name": "Valid articles only",
+      "id": "f5736d6a-cf42-40f3-80c0-69b92c4e71f0"
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        100
+      ],
+      "name": "Remove duplicates in batch",
+      "id": "b094cc8f-7a43-49b6-b744-1650ae336392"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "articles"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "url",
+              "condition": "eq",
+              "keyValue": "={{ $json.url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        100
+      ],
+      "name": "Only new articles",
+      "id": "79f3424f-1bdc-42e7-83fc-7681d1cee61e"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "articles"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        100
+      ],
+      "name": "Save to articles",
+      "id": "f652cb4e-4e64-4038-aac0-d4b41f0c9ca8"
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "RSS sources",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Hacker News API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS sources": {
+      "main": [
+        [
+          {
+            "node": "Read RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hacker News API": {
+      "main": [
+        [
+          {
+            "node": "One item per story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RSS": {
+      "main": [
+        [
+          {
+            "node": "Normalize RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per story": {
+      "main": [
+        [
+          {
+            "node": "Normalize Hacker News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize RSS": {
+      "main": [
+        [
+          {
+            "node": "All articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Hacker News": {
+      "main": [
+        [
+          {
+            "node": "All articles",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "All articles": {
+      "main": [
+        [
+          {
+            "node": "Valid articles only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid articles only": {
+      "main": [
+        [
+          {
+            "node": "Remove duplicates in batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove duplicates in batch": {
+      "main": [
+        [
+          {
+            "node": "Only new articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only new articles": {
+      "main": [
+        [
+          {
+            "node": "Save to articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
