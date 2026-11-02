@@ -1,0 +1,176 @@
+{
+  "id": "rualqXhTJjAq0O5R",
+  "name": "Newsletter Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Every 15 minutes",
+      "id": "0229e97d-8162-41d2-97f9-2dcb0890b0ef"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "name": "Run manually",
+      "id": "b9cd13ab-97e1-4c87-888e-22156d85dfc0"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email_verified",
+              "condition": "isTrue"
+            },
+            {
+              "keyName": "unsubscribed",
+              "condition": "isFalse"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        112
+      ],
+      "name": "Subscribed users",
+      "id": "35f20c87-3976-45f8-9751-bebda94e21d2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const SEND_WINDOW_MINUTES = 60;\nconst FALLBACK_TIME_ZONE = 'Europe/Paris';\n\nfunction getUser(item) {\n  return item.json;\n}\n\nfunction getTimeZone(user) {\n  if (user.timezone && DateTime.now().setZone(user.timezone).isValid) {\n    return user.timezone;\n  }\n  return FALLBACK_TIME_ZONE;\n}\n\nfunction isSendTime(user, nowForUser) {\n  const sendTime = DateTime.fromFormat(user.send_hour || '', 'H:mm');\n  if (!sendTime.isValid) {\n    return false;\n  }\n  const windowStart = nowForUser.set({ hour: sendTime.hour, minute: sendTime.minute, second: 0, millisecond: 0 });\n  const windowEnd = windowStart.plus({ minutes: SEND_WINDOW_MINUTES });\n  return nowForUser >= windowStart && nowForUser < windowEnd;\n}\n\nfunction wasServedToday(user, nowForUser) {\n  if (!user.last_sent) {\n    return false;\n  }\n  const lastSentForUser = DateTime.fromISO(user.last_sent).setZone(nowForUser.zone);\n  return lastSentForUser.hasSame(nowForUser, 'day');\n}\n\nfunction isDue(user) {\n  const nowForUser = DateTime.now().setZone(getTimeZone(user));\n  return isSendTime(user, nowForUser) && !wasServedToday(user, nowForUser);\n}\n\nfunction toSendRequest(user) {\n  return { json: { user_id: user.id } };\n}\n\nreturn $input.all().map(getUser).filter(isDue).map(toSendRequest);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        112
+      ],
+      "name": "Due now",
+      "id": "70117ea5-db49-434e-b002-aafecb208636"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "XSLEhwxtrzRfdVUF",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/XSLEhwxtrzRfdVUF",
+          "cachedResultName": "Newsletter Send"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.user_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        112
+      ],
+      "name": "Send newsletter",
+      "id": "b2bb974f-1135-4655-a2ef-da4913ad704c",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Subscribed users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Subscribed users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subscribed users": {
+      "main": [
+        [
+          {
+            "node": "Due now",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due now": {
+      "main": [
+        [
+          {
+            "node": "Send newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}
