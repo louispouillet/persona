@@ -1,0 +1,221 @@
+{
+  "id": "xP4kQ9mZ2vLw8RtA",
+  "name": "Auth - Export",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        96
+      ],
+      "id": "ea712aed-f2c4-4f5a-992e-0f0f956ab7ad",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0c423060-62cb-4e4d-8dad-4e2ac1a6ab96",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        96
+      ],
+      "id": "3d8aafb2-2fba-4a59-a665-c32402258f19",
+      "name": "Is session valid?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Run Check session').first().json.userId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "efb4e445-7b60-404c-a764-20429227a695",
+      "name": "Find account user",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const u = $input.first().json;\nif (!u.id) return [{ json: { message: 'Account not found.' } }];\n// only the data the user gave or generated; hashes, salt and security counters stay out\nconst data = {\n  email: u.email,\n  language: u.language,\n  interests: u.interests,\n  send_hour: u.send_hour,\n  timezone: u.timezone,\n  email_verified: u.email_verified,\n  consent: u.consent,\n  consent_date: u.consent_date,\n  unsubscribed: u.unsubscribed,\n  last_sent: u.last_sent,\n  account_created: u.createdAt,\n};\nreturn [{ json: { message: 'Here is all the personal data stored about you.', data } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "83de97f6-3d7a-468d-be42-461d4b12b771",
+      "name": "Build export"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f66ec2e2-18f8-42c9-97e6-def7b07a0987",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        400
+      ],
+      "id": "25da7ab6-d454-4b29-b941-cccc95b18010",
+      "name": "Reply: refused"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aChKsEsS7mQ4vXp2",
+          "mode": "list",
+          "cachedResultName": "Auth - Check session",
+          "cachedResultUrl": "/workflow/aChKsEsS7mQ4vXp2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        96
+      ],
+      "id": "a7575165-7a27-42a2-a35f-60cec71e89b7",
+      "name": "Run Check session"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is session valid?": {
+      "main": [
+        [
+          {
+            "node": "Find account user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find account user": {
+      "main": [
+        [
+          {
+            "node": "Build export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Check session": {
+      "main": [
+        [
+          {
+            "node": "Is session valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

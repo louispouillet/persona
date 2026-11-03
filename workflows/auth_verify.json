@@ -7,10 +7,8 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "filters": {
           "conditions": [
@@ -49,7 +47,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const user = $('Find user for verify').first().json;\nconst given = $('Trigger').first().json.code;\nconst candidate = $input.first().json.candidate_hash;\nconst MAX_ATTEMPTS = 5;\nconst refuse = (message) => [{ json: { ok: false, save: false, message } }];\n\nif (!user.id) return refuse('Invalid or expired code.');\nif (user.email_verified === true) return refuse('This email is already verified. You can log in.');\nif (!user.verify_code_hash || !user.verify_expires || new Date(user.verify_expires) <= new Date()) {\n  return refuse('Invalid or expired code. Ask for a new code.');\n}\nconst attempts = user.verify_attempts || 0;\nif (attempts >= MAX_ATTEMPTS) return refuse('Too many attempts. Ask for a new code.');\n\nconst ok = /^\\d{6}$/.test(given) && candidate === user.verify_code_hash;\nreturn [{ json: {\n  ok,\n  save: true,\n  userId: user.id,\n  verified: ok,\n  codeHash: ok ? '' : user.verify_code_hash,\n  expires: ok ? null : user.verify_expires,\n  attempts: ok ? 0 : attempts + 1,\n  message: ok ? 'Email verified. You can now log in.' : 'Invalid or expired code.',\n} }];"
+        "jsCode": "const user = $('Find user for verify').first().json;\nconst given = $('Trigger').first().json.code;\nconst sessionId = $('Trigger').first().json.sessionId;\nconst candidate = $input.first().json.candidate_hash;\nconst MAX_ATTEMPTS = 5;\nconst refuse = (message) => [{ json: { ok: false, save: false, message } }];\n\nif (!user.id) return refuse('Invalid or expired code.');\nif (user.email_verified === true) return refuse('This email is already verified. You can log in.');\nif (!user.verify_code_hash || !user.verify_expires || new Date(user.verify_expires) <= new Date()) {\n  return refuse('Invalid or expired code. Ask for a new code.');\n}\nconst attempts = user.verify_attempts || 0;\nif (attempts >= MAX_ATTEMPTS) return refuse('Too many attempts. Ask for a new code.');\n\nconst ok = /^\\d{6}$/.test(given) && candidate === user.verify_code_hash;\nreturn [{ json: {\n  ok,\n  // a verified email logs the user in, when this chat has a session id\n  login: ok && Boolean(sessionId),\n  save: true,\n  userId: user.id,\n  verified: ok,\n  codeHash: ok ? '' : user.verify_code_hash,\n  expires: ok ? null : user.verify_expires,\n  attempts: ok ? 0 : attempts + 1,\n  message: !ok\n    ? 'Invalid or expired code.'\n    : sessionId\n      ? 'Email verified. You are now logged in.'\n      : 'Email verified. You can now log in.',\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -99,10 +97,8 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "matchType": "allConditions",
         "filters": {
@@ -195,7 +191,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1568,
+        1952,
         832
       ],
       "id": "1ab9e41a-632a-41b6-8e41-7953e50f536d",
@@ -203,46 +199,31 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
-        },
-        "filters": {
-          "conditions": [
+        "workflowInputs": {
+          "values": [
             {
-              "keyName": "email",
-              "keyValue": "={{ $json.email }}"
+              "name": "email"
+            },
+            {
+              "name": "code"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "session_hash"
             }
           ]
-        },
-        "limit": 1
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        608,
-        1168
+        224,
+        832
       ],
-      "id": "4046672c-b4a3-4027-b6e8-8fbfdd28c5f4",
-      "name": "Find user for resend",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const user = $input.first().json;\nconst email = $('Trigger').first().json.email;\n// same answer whether or not the account exists, so emails cannot be probed\nconst message = 'If this account exists and is not verified yet, a new code was sent. A new code can be requested once per minute.';\nif (!user.id || user.email_verified === true) {\n  return [{ json: { ok: false, message } }];\n}\n// the code was sent (expiry minus 15 minutes) less than a minute ago\nif (user.verify_expires && new Date(user.verify_expires).getTime() - 14 * 60 * 1000 > Date.now()) {\n  return [{ json: { ok: false, message } }];\n}\nreturn [{ json: { ok: true, id: user.id, email: user.email, salt: user.salt, message } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        800,
-        1168
-      ],
-      "id": "a16acec4-bc9d-42e4-9524-6a1f7dfede76",
-      "name": "Check resend"
+      "id": "5bdcd94e-480f-4349-8132-abac7027b349",
+      "name": "Trigger"
     },
     {
       "parameters": {
@@ -255,8 +236,8 @@
           },
           "conditions": [
             {
-              "id": "0758f733-6fa7-49b7-ae81-5d52f52f8373",
-              "leftValue": "={{ $json.ok }}",
+              "id": "d33ae32d-d7ab-49fe-bb8d-c1af423b3811",
+              "leftValue": "={{ $('Check code').first().json.login }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -272,145 +253,32 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        992,
-        1168
+        1568,
+        720
       ],
-      "id": "6f8b8c12-bb77-4012-b465-8d1745a4ac70",
-      "name": "Can resend?"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "78587a17-92c0-4605-80dd-dd683acfd5b3",
-              "name": "message",
-              "value": "={{ $json.message }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1184,
-        1264
-      ],
-      "id": "f4e7d152-8f21-45f5-9ad5-19c624b50031",
-      "name": "Reply: resend"
-    },
-    {
-      "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "action"
-            },
-            {
-              "name": "email"
-            },
-            {
-              "name": "code"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        224,
-        960
-      ],
-      "id": "5bdcd94e-480f-4349-8132-abac7027b349",
-      "name": "Trigger"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "9090967b-96bf-46bf-89ce-bc08b2255665",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "verify",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "cc87e005-15da-4f1b-b606-cf0a9570a56e",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "resend_code",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        416,
-        960
-      ],
-      "id": "d5d3c6c1-44df-4599-9e9b-98a3215d8845",
-      "name": "Route by action"
+      "id": "fb3260db-16f3-4540-81b8-86adbdc9a1d4",
+      "name": "Log in after verification?"
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "qcAWFNC8AS5Fzjpp",
+          "value": "aCrEaTeS3nW8zLd5",
           "mode": "list",
-          "cachedResultName": "Auth - Send code",
-          "cachedResultUrl": "/workflow/qcAWFNC8AS5Fzjpp"
+          "cachedResultName": "Auth - Create session",
+          "cachedResultUrl": "/workflow/aCrEaTeS3nW8zLd5"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "id": "={{ $json.id }}",
-            "email": "={{ $json.email }}",
-            "salt": "={{ $json.salt }}",
-            "message": "={{ $json.message }}"
+            "session_hash": "={{ $('Trigger').first().json.session_hash }}",
+            "user_id": "={{ String($('Check code').first().json.userId) }}"
           },
           "matchingColumns": [],
           "schema": [
             {
-              "id": "id",
-              "displayName": "id",
+              "id": "session_hash",
+              "displayName": "session_hash",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -419,28 +287,8 @@
               "removed": false
             },
             {
-              "id": "email",
-              "displayName": "email",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "salt",
-              "displayName": "salt",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "message",
-              "displayName": "message",
+              "id": "user_id",
+              "displayName": "user_id",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -457,11 +305,11 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1184,
-        1072
+        1760,
+        640
       ],
-      "id": "3f2a0009-79f2-47ec-9672-df7f6eb400eb",
-      "name": "Run Send code"
+      "id": "41ecd9d5-0ee2-4a6a-9bd6-c6285dc52169",
+      "name": "Run Create session"
     }
   ],
   "connections": {
@@ -520,47 +368,7 @@
       "main": [
         [
           {
-            "node": "Reply: verification",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Find user for resend": {
-      "main": [
-        [
-          {
-            "node": "Check resend",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check resend": {
-      "main": [
-        [
-          {
-            "node": "Can resend?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Can resend?": {
-      "main": [
-        [
-          {
-            "node": "Run Send code",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Reply: resend",
+            "node": "Log in after verification?",
             "type": "main",
             "index": 0
           }
@@ -571,25 +379,36 @@
       "main": [
         [
           {
-            "node": "Route by action",
+            "node": "Find user for verify",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Route by action": {
+    "Log in after verification?": {
       "main": [
         [
           {
-            "node": "Find user for verify",
+            "node": "Run Create session",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Find user for resend",
+            "node": "Reply: verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Create session": {
+      "main": [
+        [
+          {
+            "node": "Reply: verification",
             "type": "main",
             "index": 0
           }

@@ -7,10 +7,8 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "filters": {
           "conditions": [
@@ -25,8 +23,8 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        656,
-        192
+        640,
+        100
       ],
       "id": "bcd553b5-580d-4e59-b1ce-e94ffe688952",
       "name": "Find user for login",
@@ -34,420 +32,11 @@
     },
     {
       "parameters": {
-        "type": "SHA512",
-        "value": "={{ ($json.salt || '') + $('Trigger').first().json.password }}",
-        "dataPropertyName": "candidate_hash"
-      },
-      "type": "n8n-nodes-base.crypto",
-      "typeVersion": 2,
-      "position": [
-        848,
-        192
-      ],
-      "id": "72f4d31f-9af5-4e1a-a84d-38b85cc3c454",
-      "name": "Hash login attempt"
-    },
-    {
-      "parameters": {
-        "jsCode": "const sessionId = $('Trigger').first().json.sessionId;\nif (!sessionId) {\n  return [{ json: { ok: false, message: 'Missing session id.' } }];\n}\n\nconst user = $('Find user for login').first().json;\nconst candidate = $input.first().json.candidate_hash;\n\nif (!user.id) {\n  return [{ json: { ok: false, message: 'Incorrect email or password.' } }];\n}\n\nif (user.locked_until && new Date(user.locked_until) > new Date()) {\n  return [{ json: { ok: false, userId: user.id, failed: user.failed_logins || 0, lockedUntil: user.locked_until, message: 'Incorrect email or password.' } }];\n}\n\nconst passwordOk = candidate === user.password_hash;\nconst verified = user.email_verified === true;\n// once a lock has expired, start a fresh series of attempts\nconst previous = (user.failed_logins || 0) >= 5 ? 0 : (user.failed_logins || 0);\nconst failed = passwordOk ? 0 : previous + 1;\nconst lockedUntil = !passwordOk && failed >= 5\n  ? new Date(Date.now() + 15 * 60 * 1000).toISOString()\n  : null;\n\n// the \"not verified\" hint is only given to someone who knows the password\nconst message = !passwordOk\n  ? 'Incorrect email or password.'\n  : !verified\n    ? 'Email not verified yet. Enter the code sent by email, or ask for a new code.'\n    : 'Login successful.';\n\nreturn [{ json: { ok: passwordOk && verified, userId: user.id, failed, lockedUntil, message } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1040,
-        192
-      ],
-      "id": "94477c6f-419e-4d28-8507-4ffb32d6eb9f",
-      "name": "Check credentials"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "4d36974d-fd4b-405d-9f85-67328cf53bd1",
-              "leftValue": "={{ $json.userId }}",
-              "rightValue": "",
-              "operator": {
-                "type": "number",
-                "operation": "exists",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        1216,
-        192
-      ],
-      "id": "3098cbf5-55a7-4cf4-a6e2-1f53bebf2a3d",
-      "name": "Does user exist?"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "8b802943-b63f-41ce-8230-cd7825cf4ea4",
-              "name": "message",
-              "value": "={{ $('Check credentials').first().json.message }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1744,
-        192
-      ],
-      "id": "1605cc39-f3b8-4b36-8c3c-261679c26313",
-      "name": "Reply: login refused"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "dataTableId": {
-          "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyValue": "={{ $json.userId }}"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "failed_logins": "={{ $json.failed }}",
-            "locked_until": "={{ $json.lockedUntil }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "email",
-              "displayName": "email",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "password_hash",
-              "displayName": "password_hash",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "salt",
-              "displayName": "salt",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "interests",
-              "displayName": "interests",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "send_hour",
-              "displayName": "send_hour",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "timezone",
-              "displayName": "timezone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "consent",
-              "displayName": "consent",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "boolean",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "consent_date",
-              "displayName": "consent_date",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "unsubscribed",
-              "displayName": "unsubscribed",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "boolean",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "failed_logins",
-              "displayName": "failed_logins",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "locked_until",
-              "displayName": "locked_until",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "last_sent",
-              "displayName": "last_sent",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "language",
-              "displayName": "language",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        1392,
-        96
-      ],
-      "id": "dd9d68f9-1397-43a1-ba65-e9fb39d9eb9d",
-      "name": "Update login attempts",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "5bcc6523-3a6b-4f52-9ee9-a0f474909e16",
-              "leftValue": "={{ $('Check credentials').first().json.ok }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        1568,
-        96
-      ],
-      "id": "c5284e27-3cb3-42de-86a1-67fde8ae94dd",
-      "name": "Is login successful?"
-    },
-    {
-      "parameters": {
         "operation": "deleteRows",
         "dataTableId": {
           "__rl": true,
-          "value": "vyPNJ9tlTBYlPWxc",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "session_hash",
-              "keyValue": "={{ $('Trigger').first().json.session_hash }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        1920,
-        0
-      ],
-      "id": "c002b0ac-d11a-4853-9a84-86fbbc0beb01",
-      "name": "Delete old session",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "vyPNJ9tlTBYlPWxc",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "session_hash": "={{ $('Trigger').first().json.session_hash }}",
-            "user_id": "={{ $('Check credentials').first().json.userId }}",
-            "expires_at": "={{ $now.plus({hours: 2}).toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "session_hash",
-              "displayName": "session_hash",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "expires_at",
-              "displayName": "expires_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        2096,
-        0
-      ],
-      "id": "b6fffb46-2d5b-4457-855e-0de94e5e2165",
-      "name": "Create session"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "13da6bce-65f1-47ad-90c0-d28f544a9dd7",
-              "name": "message",
-              "value": "={{ $('Check credentials').first().json.message }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        2272,
-        0
-      ],
-      "id": "6fe6e57a-851c-4a92-9850-8d425594816b",
-      "name": "Reply: logged in"
-    },
-    {
-      "parameters": {
-        "operation": "deleteRows",
-        "dataTableId": {
-          "__rl": true,
-          "value": "vyPNJ9tlTBYlPWxc",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
+          "mode": "name",
+          "value": "sessions"
         },
         "filters": {
           "conditions": [
@@ -585,111 +174,385 @@
       ],
       "id": "ea067acd-5504-47bd-9216-16c94b95b7ae",
       "name": "Route by action"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "28be497c-1d51-4433-b896-72816dbc39c6",
+              "leftValue": "={{ $json.sessionId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        100
+      ],
+      "id": "c69eeab8-da26-4ec8-99f0-92dcb4120878",
+      "name": "Has session id?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "549bd7b4-3867-4d9d-84b3-ff7ab7c1f141",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        860,
+        100
+      ],
+      "id": "1169a64d-1d38-4bb2-ad8c-56cbdf8b0647",
+      "name": "Does user exist?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aChKpAsS9kR2tYb6",
+          "mode": "list",
+          "cachedResultName": "Auth - Check password",
+          "cachedResultUrl": "/workflow/aChKpAsS9kR2tYb6"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "password": "={{ $('Trigger').first().json.password }}",
+            "user_id": "={{ String($json.id) }}",
+            "salt": "={{ $json.salt || '' }}",
+            "password_hash": "={{ $json.password_hash }}",
+            "failed_logins": "={{ String($json.failed_logins || 0) }}",
+            "locked_until": "={{ $json.locked_until ? String($json.locked_until) : '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "password",
+              "displayName": "password",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "salt",
+              "displayName": "salt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "password_hash",
+              "displayName": "password_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "failed_logins",
+              "displayName": "failed_logins",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "locked_until",
+              "displayName": "locked_until",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1060,
+        100
+      ],
+      "id": "4e9baab8-c1ef-4d53-b740-9e78b777869a",
+      "name": "Run Check password"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "79d5006d-2bf3-4b83-bd01-c253817646e9",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1260,
+        100
+      ],
+      "id": "3defa600-2f3d-4be5-b4d9-d3197defd50c",
+      "name": "Is password correct?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "12c29039-9d9d-4f27-b72b-6b14c3be656a",
+              "leftValue": "={{ $('Find user for login').first().json.email_verified === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1460,
+        0
+      ],
+      "id": "356a857d-7cec-4e99-ad00-2ac7ce17777b",
+      "name": "Is email verified?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aCrEaTeS3nW8zLd5",
+          "mode": "list",
+          "cachedResultName": "Auth - Create session",
+          "cachedResultUrl": "/workflow/aCrEaTeS3nW8zLd5"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $('Trigger').first().json.session_hash }}",
+            "user_id": "={{ String($('Find user for login').first().json.id) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1660,
+        0
+      ],
+      "id": "4be9aa52-8375-4fa0-a34c-462d9552ef67",
+      "name": "Run Create session"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36bb47f1-7d81-4b9b-951c-ff4126c81af0",
+              "name": "message",
+              "value": "Login successful.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1860,
+        0
+      ],
+      "id": "4bda49ea-91b7-4d2d-a996-d153d75b6663",
+      "name": "Reply: logged in"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f6fb1f5-00cf-4164-a59f-77e79058267a",
+              "name": "message",
+              "value": "Incorrect email or password.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1460,
+        260
+      ],
+      "id": "455810a2-b626-4f41-9790-d4bfd027b563",
+      "name": "Reply: login refused"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "06aeea30-86c2-46a6-9995-cf1050158502",
+              "name": "message",
+              "value": "Email not verified yet. Enter the code sent by email, or ask for a new code.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1660,
+        160
+      ],
+      "id": "daf32f2e-a0fc-46f7-8de2-bc9bfa95cfae",
+      "name": "Reply: not verified"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "117e3eb5-0480-42ed-8b92-9d3be9cf88bb",
+              "name": "message",
+              "value": "Missing session id.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        300
+      ],
+      "id": "bceb15a3-2e50-485c-b358-907cdefaaa46",
+      "name": "Reply: missing session"
     }
   ],
   "connections": {
-    "Find user for login": {
-      "main": [
-        [
-          {
-            "node": "Hash login attempt",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Hash login attempt": {
-      "main": [
-        [
-          {
-            "node": "Check credentials",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check credentials": {
-      "main": [
-        [
-          {
-            "node": "Does user exist?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Does user exist?": {
-      "main": [
-        [
-          {
-            "node": "Update login attempts",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Reply: login refused",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update login attempts": {
-      "main": [
-        [
-          {
-            "node": "Is login successful?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is login successful?": {
-      "main": [
-        [
-          {
-            "node": "Delete old session",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Reply: login refused",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Delete old session": {
-      "main": [
-        [
-          {
-            "node": "Create session",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create session": {
-      "main": [
-        [
-          {
-            "node": "Reply: logged in",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Delete session": {
       "main": [
         [
@@ -716,7 +579,7 @@
       "main": [
         [
           {
-            "node": "Find user for login",
+            "node": "Has session id?",
             "type": "main",
             "index": 0
           }
@@ -724,6 +587,111 @@
         [
           {
             "node": "Delete session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has session id?": {
+      "main": [
+        [
+          {
+            "node": "Find user for login",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: missing session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find user for login": {
+      "main": [
+        [
+          {
+            "node": "Does user exist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does user exist?": {
+      "main": [
+        [
+          {
+            "node": "Run Check password",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: login refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Check password": {
+      "main": [
+        [
+          {
+            "node": "Is password correct?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is password correct?": {
+      "main": [
+        [
+          {
+            "node": "Is email verified?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: login refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is email verified?": {
+      "main": [
+        [
+          {
+            "node": "Run Create session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: not verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Create session": {
+      "main": [
+        [
+          {
+            "node": "Reply: logged in",
             "type": "main",
             "index": 0
           }

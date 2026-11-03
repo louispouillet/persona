@@ -4,49 +4,6 @@
   "nodes": [
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "vyPNJ9tlTBYlPWxc",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/vyPNJ9tlTBYlPWxc"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "session_hash",
-              "keyValue": "={{ $json.session_hash }}"
-            }
-          ]
-        },
-        "limit": 1
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        848,
-        720
-      ],
-      "id": "bd03f062-1a50-4e94-8c8b-1667a6cdafdb",
-      "name": "Find session (profile)",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const s = $input.first().json;\nif (!s.id || !s.user_id || !s.expires_at || new Date(s.expires_at) <= new Date()) {\n  return [{ json: { ok: false, message: 'You must be logged in to change your profile.' } }];\n}\nreturn [{ json: { ok: true, userId: s.user_id } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1040,
-        720
-      ],
-      "id": "2ce6b0d4-a23d-4223-81ad-b8d11b69036e",
-      "name": "Check session (profile)"
-    },
-    {
-      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -77,22 +34,20 @@
         720
       ],
       "id": "8b2be5ad-72a2-40fb-aa6b-039e4001f0b4",
-      "name": "Is session valid? (profile)"
+      "name": "Is session valid?"
     },
     {
       "parameters": {
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "filters": {
           "conditions": [
             {
-              "keyValue": "={{ $('Check session (profile)').first().json.userId }}"
+              "keyValue": "={{ $('Run Check session').first().json.userId }}"
             }
           ]
         },
@@ -160,10 +115,8 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "filters": {
           "conditions": [
@@ -237,10 +190,8 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "matchType": "allConditions",
         "filters": {
@@ -387,6 +338,12 @@
               "name": "message",
               "value": "=Profile updated. The new email address {{ $('Check email owner').first().json.values.email }} must be verified: a code was sent to it (valid 15 minutes).",
               "type": "string"
+            },
+            {
+              "id": "6e726030-1a99-472c-94b0-3fb048c7d700",
+              "name": "language",
+              "value": "={{ $('Find current user').first().json.language }}",
+              "type": "string"
             }
           ]
         },
@@ -445,7 +402,7 @@
         720
       ],
       "id": "b1831549-1cca-4f27-bf7f-938744eead02",
-      "name": "Reply: profile refused"
+      "name": "Reply: refused"
     },
     {
       "parameters": {
@@ -493,7 +450,8 @@
             "id": "={{ $json.id }}",
             "email": "={{ $json.email }}",
             "salt": "={{ $json.salt }}",
-            "message": "={{ $json.message }}"
+            "message": "={{ $json.message }}",
+            "language": "={{ $json.language }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -536,6 +494,16 @@
               "canBeUsedToMatch": true,
               "type": "string",
               "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -551,32 +519,51 @@
       ],
       "id": "2ffe95d7-cc39-4f94-9af8-087f79b647f8",
       "name": "Run Send code"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aChKsEsS7mQ4vXp2",
+          "mode": "list",
+          "cachedResultName": "Auth - Check session",
+          "cachedResultUrl": "/workflow/aChKsEsS7mQ4vXp2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        720
+      ],
+      "id": "0535dd07-2aa4-40b8-acac-c7f6391fa5cc",
+      "name": "Run Check session"
     }
   ],
   "connections": {
-    "Find session (profile)": {
-      "main": [
-        [
-          {
-            "node": "Check session (profile)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check session (profile)": {
-      "main": [
-        [
-          {
-            "node": "Is session valid? (profile)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is session valid? (profile)": {
+    "Is session valid?": {
       "main": [
         [
           {
@@ -587,7 +574,7 @@
         ],
         [
           {
-            "node": "Reply: profile refused",
+            "node": "Reply: refused",
             "type": "main",
             "index": 0
           }
@@ -627,7 +614,7 @@
         ],
         [
           {
-            "node": "Reply: profile refused",
+            "node": "Reply: refused",
             "type": "main",
             "index": 0
           }
@@ -667,7 +654,7 @@
         ],
         [
           {
-            "node": "Reply: profile refused",
+            "node": "Reply: refused",
             "type": "main",
             "index": 0
           }
@@ -718,7 +705,18 @@
       "main": [
         [
           {
-            "node": "Find session (profile)",
+            "node": "Run Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Check session": {
+      "main": [
+        [
+          {
+            "node": "Is session valid?",
             "type": "main",
             "index": 0
           }

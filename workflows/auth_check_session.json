@@ -1,0 +1,95 @@
+{
+  "id": "aChKsEsS7mQ4vXp2",
+  "name": "Auth - Check session",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ed4aa5c4-0a31-4e88-a70e-66a9ab70ecd1",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "sessions"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_hash",
+              "keyValue": "={{ $json.session_hash }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "2c2fd038-143a-4657-9f0d-0384f46b17af",
+      "name": "Find session",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nif (!s.id || !s.user_id || !s.expires_at || new Date(s.expires_at) <= new Date()) {\n  return [{ json: { ok: false, message: 'You must be logged in to do this.' } }];\n}\nreturn [{ json: { ok: true, userId: s.user_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "afa37c76-adb5-427a-9c7c-a79bdaf29290",
+      "name": "Check session"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find session": {
+      "main": [
+        [
+          {
+            "node": "Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

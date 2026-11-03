@@ -1,0 +1,146 @@
+{
+  "id": "aCrEaTeS3nW8zLd5",
+  "name": "Auth - Create session",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            },
+            {
+              "name": "user_id"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2e195f65-ec7d-4375-8457-aaec4728e154",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "sessions"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_hash",
+              "keyValue": "={{ $json.session_hash }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "1094147b-2c8f-4e73-8a1d-5d9851741b8d",
+      "name": "Delete old session",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "sessions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $('Trigger').first().json.session_hash }}",
+            "user_id": "={{ Number($('Trigger').first().json.user_id) }}",
+            "expires_at": "={{ $now.plus({hours: 2}).toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "b142b10d-28d9-47d1-b025-c7d9aeb678dc",
+      "name": "Create session"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Delete old session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete old session": {
+      "main": [
+        [
+          {
+            "node": "Create session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false
+}

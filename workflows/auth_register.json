@@ -77,10 +77,8 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "filters": {
           "conditions": [
@@ -193,10 +191,8 @@
       "parameters": {
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -426,6 +422,12 @@
               "name": "message",
               "value": "=Account created. A verification code was sent to {{ $json.email }} (valid 15 minutes). The email must be verified before logging in.",
               "type": "string"
+            },
+            {
+              "id": "fe113a8d-9d17-49b6-9c08-0242ea53b4b1",
+              "name": "language",
+              "value": "={{ $('Validate input').first().json.language }}",
+              "type": "string"
             }
           ]
         },
@@ -438,7 +440,7 @@
         -48
       ],
       "id": "8650a1c4-7ff8-448c-9dba-703cae1649be",
-      "name": "Registered"
+      "name": "Reply: registered"
     },
     {
       "parameters": {
@@ -483,7 +485,8 @@
             "id": "={{ $json.id }}",
             "email": "={{ $json.email }}",
             "salt": "={{ $json.salt }}",
-            "message": "={{ $json.message }}"
+            "message": "={{ $json.message }}",
+            "language": "={{ $json.language }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -520,6 +523,16 @@
             {
               "id": "message",
               "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -628,14 +641,14 @@
       "main": [
         [
           {
-            "node": "Registered",
+            "node": "Reply: registered",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Registered": {
+    "Reply: registered": {
       "main": [
         [
           {

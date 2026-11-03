@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const user = $input.first().json;\n// 48 random bits from the Crypto node, reduced to 6 digits\nconst seed = parseInt(user.code_seed.slice(0, 12), 16);\nreturn [{ json: {\n  userId: user.id,\n  email: user.email,\n  salt: user.salt,\n  message: user.message,\n  code: String(seed % 1000000).padStart(6, '0'),\n  expires: new Date(Date.now() + 15 * 60 * 1000).toISOString(),\n} }];"
+        "jsCode": "const user = $input.first().json;\n// 48 random bits from the Crypto node, reduced to 6 digits\nconst seed = parseInt(user.code_seed.slice(0, 12), 16);\nconst code = String(seed % 1000000).padStart(6, '0');\n\n// email text in the language of the user, English when the language is not translated\nconst TEXTS = {\n  en: ['Persona: your verification code', 'Your verification code', 'Valid for 15 minutes.', 'If you did not make this request, ignore this email.'],\n  fr: ['Persona : ton code de vérification', 'Ton code de vérification', 'Valable 15 minutes.', \"Si tu n'es pas à l'origine de cette demande, ignore ce mail.\"],\n  es: ['Persona: tu código de verificación', 'Tu código de verificación', 'Válido durante 15 minutos.', 'Si no has hecho esta solicitud, ignora este correo.'],\n  de: ['Persona: dein Bestätigungscode', 'Dein Bestätigungscode', '15 Minuten gültig.', 'Wenn du das nicht angefordert hast, ignoriere diese E-Mail.'],\n  it: ['Persona: il tuo codice di verifica', 'Il tuo codice di verifica', 'Valido per 15 minuti.', 'Se non hai fatto tu questa richiesta, ignora questa email.'],\n  pt: ['Persona: o teu código de verificação', 'O teu código de verificação', 'Válido durante 15 minutos.', 'Se não fizeste este pedido, ignora este email.'],\n};\nconst language = Object.hasOwn(TEXTS, user.language) ? user.language : 'en';\nconst [subject, intro, validity, ignore] = TEXTS[language];\n\nreturn [{ json: {\n  userId: user.id,\n  email: user.email,\n  salt: user.salt,\n  message: user.message,\n  code,\n  subject,\n  body: `${intro}: ${code}\\n${validity}\\n\\n${ignore}`,\n  expires: new Date(Date.now() + 15 * 60 * 1000).toISOString(),\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -50,10 +50,8 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "value": "iwAnSS8WkOpD3WPF",
-          "mode": "list",
-          "cachedResultName": "users",
-          "cachedResultUrl": "/projects/kHjYPPyEFyLdJOiS/datatables/iwAnSS8WkOpD3WPF"
+          "mode": "name",
+          "value": "users"
         },
         "matchType": "allConditions",
         "filters": {
@@ -122,9 +120,9 @@
       "parameters": {
         "fromEmail": "lilian.davezac@gmail.com",
         "toEmail": "={{ $('Make code').first().json.email }}",
-        "subject": "Persona : ton code de vérification / your verification code",
+        "subject": "={{ $('Make code').first().json.subject }}",
         "emailFormat": "text",
-        "text": "=Ton code de vérification : {{ $('Make code').first().json.code }}\nValable 15 minutes.\n\nYour verification code: {{ $('Make code').first().json.code }}\nValid for 15 minutes.\n\nSi tu n'es pas à l'origine de cette demande, ignore ce mail.",
+        "text": "={{ $('Make code').first().json.body }}",
         "options": {}
       },
       "type": "n8n-nodes-base.emailSend",
@@ -182,6 +180,9 @@
             },
             {
               "name": "message"
+            },
+            {
+              "name": "language"
             }
           ]
         }

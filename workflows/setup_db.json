@@ -139,29 +139,155 @@
     },
     {
       "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "kNS9q7seI8QDd591",
-          "cachedResultName": "Setup DB Newsletters"
+        "resource": "table",
+        "operation": "create",
+        "tableName": "articles",
+        "columns": {
+          "column": [
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            },
+            {
+              "name": "published_at",
+              "type": "date"
+            },
+            {
+              "name": "content",
+              "type": "string"
+            },
+            {
+              "name": "summary",
+              "type": "string"
+            },
+            {
+              "name": "categories",
+              "type": "string"
+            },
+            {
+              "name": "language",
+              "type": "string"
+            }
+          ]
         },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        0
+      ],
+      "name": "Create articles",
+      "id": "5323f665-c5b2-44f6-8663-d7f44941cb65"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "settings",
+        "columns": {
+          "column": [
+            {
+              "name": "key",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "name": "Create settings",
+      "id": "5dc60241-e414-4382-ad53-80c7138e7953"
+    },
+    {
+      "parameters": {
+        "jsCode": "const DEFAULT_SETTINGS = [\n  { key: 'public_url', value: 'http://localhost:5678' },\n];\n\nfunction toItem(setting) {\n  return { json: setting };\n}\n\nreturn DEFAULT_SETTINGS.map(toItem);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "name": "Default settings",
+      "id": "76cff61c-4bc6-4697-ad28-e68feef49a6d"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "settings"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        0
+      ],
+      "name": "Only missing settings",
+      "id": "8e6e40cb-6dbc-48c1-b8d5-4cc7b400d359"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "settings"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
           "value": {},
           "matchingColumns": [],
           "schema": []
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
       "position": [
-        660,
+        1540,
         0
       ],
-      "name": "Run Setup DB Newsletters",
-      "id": "97df848f-e503-437e-87cb-ab83bd5f6fb2"
+      "name": "Save settings",
+      "id": "bd4bec0e-fdea-48d6-b474-5161d4f41287"
     }
   ],
   "connections": {
@@ -191,7 +317,51 @@
       "main": [
         [
           {
-            "node": "Run Setup DB Newsletters",
+            "node": "Create articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create articles": {
+      "main": [
+        [
+          {
+            "node": "Create settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create settings": {
+      "main": [
+        [
+          {
+            "node": "Default settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default settings": {
+      "main": [
+        [
+          {
+            "node": "Only missing settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only missing settings": {
+      "main": [
+        [
+          {
+            "node": "Save settings",
             "type": "main",
             "index": 0
           }
