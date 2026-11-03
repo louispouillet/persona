@@ -190,12 +190,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const BRAND_NAME = 'NewsLetter';\nconst SUPPORTED_LANGUAGES = ['fr', 'en'];\nconst DEFAULT_LANGUAGE = 'en';\nconst FALLBACK_TIME_ZONE = 'Europe/Paris';\nconst LABELS = {\n  fr: { read: \"Lire l'article\", footer: 'Vous recevez cette newsletter car vous êtes inscrit. Pour vous désinscrire, écrivez « désinscription » au chatbot.' },\n  en: { read: 'Read the article', footer: 'You receive this newsletter because you signed up. To unsubscribe, write \"unsubscribe\" to the chatbot.' },\n};\n\nfunction getLanguage(user) {\n  return SUPPORTED_LANGUAGES.includes(user.language) ? user.language : DEFAULT_LANGUAGE;\n}\n\nfunction escapeHtml(text) {\n  return String(text ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction toSafeUrl(url) {\n  return /^https?:\\/\\//i.test(url || '') ? url : '#';\n}\n\nfunction getId(article) {\n  return article.id;\n}\n\nfunction mergeAiTextIntoArticles(articles, aiItems) {\n  const articlesById = new Map();\n  for (const article of articles) {\n    articlesById.set(article.id, article);\n  }\n\n  const aiTextById = new Map();\n  for (const aiItem of aiItems) {\n    if (articlesById.has(aiItem.id)) {\n      aiTextById.set(aiItem.id, aiItem);\n    }\n  }\n\n  const orderedIds = [...aiTextById.keys()];\n  for (const article of articles) {\n    if (!aiTextById.has(article.id)) {\n      orderedIds.push(article.id);\n    }\n  }\n\n  const merged = [];\n  for (const id of orderedIds) {\n    const article = articlesById.get(id);\n    const aiText = aiTextById.get(id);\n    merged.push({ ...article, title: aiText?.title || article.title, summary: aiText?.summary || article.summary });\n  }\n  return merged;\n}\n\nfunction formatDate(language, timeZone) {\n  return new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long', timeZone });\n}\n\nfunction renderArticleCard(article, readLabel) {\n  const url = escapeHtml(toSafeUrl(article.url));\n  return `\n  <tr><td style=\"padding:0 0 24px 0;\">\n    <p style=\"margin:0 0 6px 0;font:600 12px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;\">${escapeHtml(article.source)} · ${escapeHtml(article.categories.split(',').join(' · '))}</p>\n    <p style=\"margin:0 0 8px 0;font:700 18px/1.3 Georgia,serif;color:#111827;\"><a href=\"${url}\" style=\"color:#111827;text-decoration:none;\">${escapeHtml(article.title)}</a></p>\n    <p style=\"margin:0 0 10px 0;font:15px/1.55 Arial,sans-serif;color:#374151;\">${escapeHtml(article.summary)}</p>\n    <a href=\"${url}\" style=\"font:600 14px Arial,sans-serif;color:#2f5bea;text-decoration:none;\">${escapeHtml(readLabel)} →</a>\n  </td></tr>`;\n}\n\nfunction renderArticleCards(articles, readLabel) {\n  let cards = '';\n  for (const article of articles) {\n    cards += renderArticleCard(article, readLabel);\n  }\n  return cards;\n}\n\nfunction renderHtml({ language, subject, date, intro, cards, footer }) {\n  return `<!doctype html>\n<html lang=\"${language}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escapeHtml(subject)}</title></head>\n<body style=\"margin:0;padding:0;background:#f3f4f6;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:24px 12px;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;background:#ffffff;border-radius:8px;\">\n    <tr><td style=\"padding:28px 28px 8px 28px;\">\n      <p style=\"margin:0;font:700 22px Georgia,serif;color:#2f5bea;\">${BRAND_NAME}</p>\n      <p style=\"margin:4px 0 0 0;font:13px Arial,sans-serif;color:#6b7280;\">${escapeHtml(date)}</p>\n    </td></tr>\n    <tr><td style=\"padding:12px 28px 20px 28px;font:16px/1.55 Arial,sans-serif;color:#111827;\">${escapeHtml(intro)}</td></tr>\n    <tr><td style=\"padding:0 28px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">${cards}</table></td></tr>\n    <tr><td style=\"padding:16px 28px 28px 28px;border-top:1px solid #e5e7eb;font:12px/1.5 Arial,sans-serif;color:#6b7280;\">${escapeHtml(footer)}</td></tr>\n  </table>\n</td></tr></table>\n</body></html>`;\n}\n\nfunction renderTextEntry(article) {\n  return `• ${article.title} (${article.source})\\n  ${article.summary}\\n  ${toSafeUrl(article.url)}\\n`;\n}\n\nfunction renderText({ date, intro, articles, footer }) {\n  return [date, '', intro, '', ...articles.map(renderTextEntry), '—', footer].join('\\n');\n}\n\nconst { user, articles } = $('Pick best articles').first().json;\nconst aiText = $json.output;\nconst language = getLanguage(user);\nconst labels = LABELS[language];\nconst newsletterArticles = mergeAiTextIntoArticles(articles, aiText.items || []);\nconst date = formatDate(language, user.timezone || FALLBACK_TIME_ZONE);\n\nconst html = renderHtml({\n  language,\n  subject: aiText.subject,\n  date,\n  intro: aiText.intro,\n  cards: renderArticleCards(newsletterArticles, labels.read),\n  footer: labels.footer,\n});\nconst text = renderText({ date, intro: aiText.intro, articles: newsletterArticles, footer: labels.footer });\n\nreturn [{ json: { user_id: user.id, email: user.email, subject: aiText.subject, html, text, article_ids: newsletterArticles.map(getId) } }];\n"
+        "jsCode": "const BRAND_NAME = 'NewsLetter';\nconst SUPPORTED_LANGUAGES = ['fr', 'en'];\nconst DEFAULT_LANGUAGE = 'en';\nconst FALLBACK_TIME_ZONE = 'Europe/Paris';\nconst UNSUBSCRIBE_PATH = '/webhook/unsubscribe';\nconst LABELS = {\n  fr: { read: \"Lire l'article\", footer: 'Vous recevez cette newsletter car vous êtes inscrit.', unsubscribe: 'Se désinscrire', chatHint: 'Vous pouvez aussi écrire « désinscription » au chatbot.' },\n  en: { read: 'Read the article', footer: 'You receive this newsletter because you signed up.', unsubscribe: 'Unsubscribe', chatHint: 'You can also write \"unsubscribe\" to the chatbot.' },\n};\n\nfunction getLanguage(user) {\n  return SUPPORTED_LANGUAGES.includes(user.language) ? user.language : DEFAULT_LANGUAGE;\n}\n\nfunction escapeHtml(text) {\n  return String(text ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction toSafeUrl(url) {\n  return /^https?:\\/\\//i.test(url || '') ? url : '#';\n}\n\nfunction buildUnsubscribeUrl(publicUrl, userId, signature) {\n  if (!publicUrl) {\n    throw new Error('Missing public_url in the settings table: run the Setup DB workflow.');\n  }\n  const baseUrl = publicUrl.replace(/\\/+$/, '');\n  return `${baseUrl}${UNSUBSCRIBE_PATH}?user=${encodeURIComponent(userId)}&sig=${encodeURIComponent(signature)}`;\n}\n\nfunction getId(article) {\n  return article.id;\n}\n\nfunction mergeAiTextIntoArticles(articles, aiItems) {\n  const articlesById = new Map();\n  for (const article of articles) {\n    articlesById.set(article.id, article);\n  }\n\n  const aiTextById = new Map();\n  for (const aiItem of aiItems) {\n    if (articlesById.has(aiItem.id)) {\n      aiTextById.set(aiItem.id, aiItem);\n    }\n  }\n\n  const orderedIds = [...aiTextById.keys()];\n  for (const article of articles) {\n    if (!aiTextById.has(article.id)) {\n      orderedIds.push(article.id);\n    }\n  }\n\n  const merged = [];\n  for (const id of orderedIds) {\n    const article = articlesById.get(id);\n    const aiText = aiTextById.get(id);\n    merged.push({ ...article, title: aiText?.title || article.title, summary: aiText?.summary || article.summary });\n  }\n  return merged;\n}\n\nfunction formatDate(language, timeZone) {\n  return new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long', timeZone });\n}\n\nfunction renderArticleCard(article, readLabel) {\n  const url = escapeHtml(toSafeUrl(article.url));\n  return `\n  <tr><td style=\"padding:0 0 24px 0;\">\n    <p style=\"margin:0 0 6px 0;font:600 12px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;\">${escapeHtml(article.source)} · ${escapeHtml(article.categories.split(',').join(' · '))}</p>\n    <p style=\"margin:0 0 8px 0;font:700 18px/1.3 Georgia,serif;color:#111827;\"><a href=\"${url}\" style=\"color:#111827;text-decoration:none;\">${escapeHtml(article.title)}</a></p>\n    <p style=\"margin:0 0 10px 0;font:15px/1.55 Arial,sans-serif;color:#374151;\">${escapeHtml(article.summary)}</p>\n    <a href=\"${url}\" style=\"font:600 14px Arial,sans-serif;color:#2f5bea;text-decoration:none;\">${escapeHtml(readLabel)} →</a>\n  </td></tr>`;\n}\n\nfunction renderArticleCards(articles, readLabel) {\n  let cards = '';\n  for (const article of articles) {\n    cards += renderArticleCard(article, readLabel);\n  }\n  return cards;\n}\n\nfunction renderFooter(labels, unsubscribeUrl) {\n  return `${escapeHtml(labels.footer)} <a href=\"${escapeHtml(unsubscribeUrl)}\" style=\"color:#6b7280;\">${escapeHtml(labels.unsubscribe)}</a>. ${escapeHtml(labels.chatHint)}`;\n}\n\nfunction renderHtml({ language, subject, date, intro, cards, footer }) {\n  return `<!doctype html>\n<html lang=\"${language}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escapeHtml(subject)}</title></head>\n<body style=\"margin:0;padding:0;background:#f3f4f6;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:24px 12px;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;background:#ffffff;border-radius:8px;\">\n    <tr><td style=\"padding:28px 28px 8px 28px;\">\n      <p style=\"margin:0;font:700 22px Georgia,serif;color:#2f5bea;\">${BRAND_NAME}</p>\n      <p style=\"margin:4px 0 0 0;font:13px Arial,sans-serif;color:#6b7280;\">${escapeHtml(date)}</p>\n    </td></tr>\n    <tr><td style=\"padding:12px 28px 20px 28px;font:16px/1.55 Arial,sans-serif;color:#111827;\">${escapeHtml(intro)}</td></tr>\n    <tr><td style=\"padding:0 28px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">${cards}</table></td></tr>\n    <tr><td style=\"padding:16px 28px 28px 28px;border-top:1px solid #e5e7eb;font:12px/1.5 Arial,sans-serif;color:#6b7280;\">${footer}</td></tr>\n  </table>\n</td></tr></table>\n</body></html>`;\n}\n\nfunction renderTextEntry(article) {\n  return `• ${article.title} (${article.source})\\n  ${article.summary}\\n  ${toSafeUrl(article.url)}\\n`;\n}\n\nfunction renderText({ date, intro, articles, labels, unsubscribeUrl }) {\n  return [date, '', intro, '', ...articles.map(renderTextEntry), '—', labels.footer, `${labels.unsubscribe} : ${unsubscribeUrl}`, labels.chatHint].join('\\n');\n}\n\nconst { user, articles } = $('Pick best articles').first().json;\nconst aiText = $('Write newsletter').first().json.output;\nconst publicUrl = $('Get public URL').first().json.value;\nconst signature = $('Sign unsubscribe link').first().json.signature;\nconst language = getLanguage(user);\nconst labels = LABELS[language];\nconst newsletterArticles = mergeAiTextIntoArticles(articles, aiText.items || []);\nconst date = formatDate(language, user.timezone || FALLBACK_TIME_ZONE);\nconst unsubscribeUrl = buildUnsubscribeUrl(publicUrl, user.id, signature);\n\nconst html = renderHtml({\n  language,\n  subject: aiText.subject,\n  date,\n  intro: aiText.intro,\n  cards: renderArticleCards(newsletterArticles, labels.read),\n  footer: renderFooter(labels, unsubscribeUrl),\n});\nconst text = renderText({ date, intro: aiText.intro, articles: newsletterArticles, labels, unsubscribeUrl });\n\nreturn [{ json: { user_id: user.id, email: user.email, subject: aiText.subject, html, text, article_ids: newsletterArticles.map(getId), unsubscribe_url: unsubscribeUrl } }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1792,
+        2232,
         112
       ],
       "name": "Render email",
@@ -331,6 +331,60 @@
       ],
       "name": "No new articles",
       "id": "bc58dd36-0853-4591-8310-74ca6d20cdbd"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "settings"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "public_url"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1764,
+        112
+      ],
+      "name": "Get public URL",
+      "alwaysOutputData": true,
+      "id": "2434ed2b-c37e-496d-8242-cb6ac51a0346"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "=unsubscribe:{{ $('Get user').first().json.id }}",
+        "dataPropertyName": "signature",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        112
+      ],
+      "name": "Sign unsubscribe link",
+      "credentials": {
+        "crypto": {
+          "id": "Pqv9pad8qudfX29N",
+          "name": "crypto"
+        }
+      },
+      "id": "58667ef9-03c6-45eb-aec2-15c185798ecc"
     }
   ],
   "connections": {
@@ -426,7 +480,7 @@
       "main": [
         [
           {
-            "node": "Render email",
+            "node": "Get public URL",
             "type": "main",
             "index": 0
           }
@@ -463,6 +517,28 @@
         [
           {
             "node": "No new articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get public URL": {
+      "main": [
+        [
+          {
+            "node": "Sign unsubscribe link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign unsubscribe link": {
+      "main": [
+        [
+          {
+            "node": "Render email",
             "type": "main",
             "index": 0
           }

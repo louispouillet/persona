@@ -1,0 +1,423 @@
+{
+  "id": "saxd2f2XVaT5ECAa",
+  "name": "Unsubscribe",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "path": "unsubscribe",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        100
+      ],
+      "name": "Unsubscribe link",
+      "webhookId": "6fd346b0-0408-471b-85d3-983ff059e5ee",
+      "id": "a641f3b4-161f-4842-b416-711dd43f5b44"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea739b0c-ccd0-42f8-bcc6-04b84e2f36ae",
+              "name": "user_id",
+              "value": "={{ String($json.query.user ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "6dc7be8a-d1b3-46ab-a2cc-dedcd33c3198",
+              "name": "signature",
+              "value": "={{ String($json.query.sig ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "704bc058-b359-484b-8dfc-f65966de77a5",
+              "name": "action",
+              "value": "confirm",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "name": "Show confirmation",
+      "id": "efdeeaa3-eb42-4571-8efa-7862b6964667"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "347e125f-b5fe-4a94-8e6b-d2cc9942ac0e",
+              "name": "user_id",
+              "value": "={{ String($json.query.user ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "8c5d9982-b3e7-4848-927a-9de57492973f",
+              "name": "signature",
+              "value": "={{ String($json.query.sig ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "544da6fe-4fb7-4c33-867b-2ab555acfd55",
+              "name": "action",
+              "value": "unsubscribe",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        200
+      ],
+      "name": "Confirm unsubscribe",
+      "id": "45e714eb-0600-4d93-9c8b-cbf4bb87a6d5"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "=unsubscribe:{{ $json.user_id }}",
+        "dataPropertyName": "expected_signature",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        480,
+        100
+      ],
+      "name": "Expected signature",
+      "credentials": {
+        "crypto": {
+          "id": "Pqv9pad8qudfX29N",
+          "name": "crypto"
+        }
+      },
+      "id": "030221ba-511a-401a-9c95-d015130885f1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b07eadf-d74a-4f84-9fbd-75b257a29bae",
+              "leftValue": "={{ $json.user_id }}",
+              "rightValue": "^[0-9]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "f103d146-68c0-4412-b228-aa4f75fc7b42",
+              "leftValue": "={{ $json.signature }}",
+              "rightValue": "={{ $json.expected_signature }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        100
+      ],
+      "name": "Valid link?",
+      "id": "aba3c552-a6c9-4c5a-a15a-7239d10840a6"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Lien invalide / Invalid link</title></head><body style=\"margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;\"><main style=\"max-width:480px;margin:48px auto;background:#ffffff;border-radius:8px;padding:32px;\"><p style=\"margin:0 0 20px 0;font:700 22px Georgia,serif;color:#2f5bea;\">NewsLetter</p><p style=\"margin:0 0 8px 0;font-size:16px;\">Ce lien de désinscription n'est pas valide.</p><p style=\"margin:0 0 16px 0;font-size:14px;color:#6b7280;\">This unsubscribe link is not valid.</p><p style=\"margin:0;font-size:13px;color:#6b7280;\">Vous pouvez écrire « désinscription » au chatbot. / You can write \"unsubscribe\" to the chatbot.</p></main></body></html>",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        960,
+        300
+      ],
+      "name": "Invalid link page",
+      "id": "f99a57c3-2385-42b5-873f-2e3572befe5c"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "84a6ab41-69bc-408a-bece-0161c1f83574",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "unsubscribe",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        0
+      ],
+      "name": "Confirmed?",
+      "id": "2e323d3f-2c03-4259-8634-ea5659841900"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Désinscription / Unsubscribe</title></head><body style=\"margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;\"><main style=\"max-width:480px;margin:48px auto;background:#ffffff;border-radius:8px;padding:32px;\"><p style=\"margin:0 0 20px 0;font:700 22px Georgia,serif;color:#2f5bea;\">NewsLetter</p><p style=\"margin:0 0 8px 0;font-size:16px;\">Voulez-vous vraiment ne plus recevoir la newsletter ?</p><p style=\"margin:0 0 24px 0;font-size:14px;color:#6b7280;\">Do you really want to stop receiving the newsletter?</p><form method=\"post\" action=\"?user={{ $json.user_id }}&amp;sig={{ $json.signature }}\"><button type=\"submit\" style=\"background:#2f5bea;color:#ffffff;border:0;border-radius:6px;padding:12px 20px;font:600 15px Arial,sans-serif;cursor:pointer;\">Me désinscrire / Unsubscribe</button></form></main></body></html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        100
+      ],
+      "name": "Confirmation page",
+      "id": "3387c62f-1000-4454-aa99-d879aaf8c748"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "unsubscribed": true
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "unsubscribed",
+              "displayName": "unsubscribed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        -100
+      ],
+      "name": "Set unsubscribed",
+      "alwaysOutputData": true,
+      "id": "45f20ad7-bcf2-401d-90cf-8838c1874574"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Désinscrit / Unsubscribed</title></head><body style=\"margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827;\"><main style=\"max-width:480px;margin:48px auto;background:#ffffff;border-radius:8px;padding:32px;\"><p style=\"margin:0 0 20px 0;font:700 22px Georgia,serif;color:#2f5bea;\">NewsLetter</p><p style=\"margin:0 0 8px 0;font-size:16px;\">C'est fait : vous ne recevrez plus la newsletter.</p><p style=\"margin:0 0 16px 0;font-size:14px;color:#6b7280;\">Done: you will not receive the newsletter anymore.</p><p style=\"margin:0;font-size:13px;color:#6b7280;\">Pour vous réabonner, écrivez au chatbot. / To subscribe again, write to the chatbot.</p></main></body></html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1440,
+        -100
+      ],
+      "name": "Unsubscribed page",
+      "id": "37b681cf-a466-4505-89e3-22ca143ebee3"
+    }
+  ],
+  "connections": {
+    "Unsubscribe link": {
+      "main": [
+        [
+          {
+            "node": "Show confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm unsubscribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Show confirmation": {
+      "main": [
+        [
+          {
+            "node": "Expected signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm unsubscribe": {
+      "main": [
+        [
+          {
+            "node": "Expected signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expected signature": {
+      "main": [
+        [
+          {
+            "node": "Valid link?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid link?": {
+      "main": [
+        [
+          {
+            "node": "Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid link page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Set unsubscribed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirmation page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set unsubscribed": {
+      "main": [
+        [
+          {
+            "node": "Unsubscribed page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

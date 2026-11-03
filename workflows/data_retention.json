@@ -1,0 +1,126 @@
+{
+  "id": "zufi6CmDaOwJ8Tos",
+  "name": "Data Retention",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Every night at 3am",
+      "id": "ff591fd4-21fc-4479-a4c4-62fae5e321b2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "Run manually",
+      "id": "342be91b-1e93-4cab-93b1-499d0a1df5a1"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "articles"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "published_at",
+              "condition": "lt",
+              "keyValue": "={{ $now.minus({ days: 30 }).toISO() }}"
+            },
+            {
+              "keyName": "createdAt",
+              "condition": "lt",
+              "keyValue": "={{ $now.minus({ days: 30 }).toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        100
+      ],
+      "name": "Delete old articles",
+      "alwaysOutputData": true,
+      "id": "362835fa-228c-44fd-b588-4c3a614b8f78"
+    },
+    {
+      "parameters": {
+        "jsCode": "function isDeletedArticle(item) {\n  return Boolean(item.json.id);\n}\n\nconst deletedArticles = $input.all().filter(isDeletedArticle);\n\nreturn [{ json: { deleted_articles: deletedArticles.length } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        100
+      ],
+      "name": "Retention summary",
+      "id": "84d1d250-0844-4d15-a682-0a7cca88cbc5"
+    }
+  ],
+  "connections": {
+    "Every night at 3am": {
+      "main": [
+        [
+          {
+            "node": "Delete old articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Delete old articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete old articles": {
+      "main": [
+        [
+          {
+            "node": "Retention summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
