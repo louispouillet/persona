@@ -24,7 +24,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// One item per RSS source. To add a source, add a line.\nconst sources = [\n  { name: 'BBC News',    url: 'https://feeds.bbci.co.uk/news/rss.xml',  language: 'en' },\n  { name: 'Le Monde',    url: 'https://www.lemonde.fr/rss/une.xml',     language: 'fr' },\n  { name: 'TechCrunch',  url: 'https://techcrunch.com/feed/',           language: 'en' },\n  { name: 'The Verge',   url: 'https://www.theverge.com/rss/index.xml', language: 'en' },\n  { name: 'France Info', url: 'https://www.francetvinfo.fr/titres.rss', language: 'fr' },\n];\n\nreturn sources.map(source => ({ json: source }));\n"
+        "jsCode": "const RSS_SOURCES = [\n  { name: 'BBC News',    url: 'https://feeds.bbci.co.uk/news/rss.xml',  language: 'en' },\n  { name: 'Le Monde',    url: 'https://www.lemonde.fr/rss/une.xml',     language: 'fr' },\n  { name: 'TechCrunch',  url: 'https://techcrunch.com/feed/',           language: 'en' },\n  { name: 'The Verge',   url: 'https://www.theverge.com/rss/index.xml', language: 'en' },\n  { name: 'France Info', url: 'https://www.francetvinfo.fr/titres.rss', language: 'fr' },\n];\n\nfunction toItem(source) {\n  return { json: source };\n}\n\nreturn RSS_SOURCES.map(toItem);\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

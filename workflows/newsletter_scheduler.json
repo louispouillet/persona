@@ -120,6 +120,19 @@
       "name": "Send newsletter",
       "id": "b2bb974f-1135-4655-a2ef-da4913ad704c",
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function createEmptySummary(dueCount) {\n  return { due: dueCount, sent: 0, no_new_articles: 0, failed: 0, failures: [] };\n}\n\nfunction getUserId(item) {\n  const dueIndex = item.pairedItem?.item;\n  return item.json.user_id ?? dueUsers[dueIndex]?.json.user_id ?? null;\n}\n\nfunction toFailure(item) {\n  return { user_id: getUserId(item), reason: item.json.reason || 'error', error: item.json.error || null };\n}\n\nfunction addToSummary(summary, item) {\n  if (item.json.sent) {\n    summary.sent++;\n  } else if (item.json.reason === 'no_matching_articles') {\n    summary.no_new_articles++;\n  } else {\n    summary.failed++;\n    summary.failures.push(toFailure(item));\n  }\n  return summary;\n}\n\nconst dueUsers = $('Due now').all();\nconst summary = $input.all().reduce(addToSummary, createEmptySummary(dueUsers.length));\n\nreturn [{ json: summary }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        100
+      ],
+      "name": "Run summary",
+      "id": "96199d29-906d-4c45-8b80-6e92a3594aa8"
     }
   ],
   "connections": {
@@ -161,6 +174,17 @@
         [
           {
             "node": "Send newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send newsletter": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
             "type": "main",
             "index": 0
           }
