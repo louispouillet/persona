@@ -33,6 +33,7 @@
     },
     {
       "parameters": {
+        "modelName": "models/gemini-3.5-flash",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
@@ -45,7 +46,7 @@
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
-          "id": "Zgr61STa9O0oY05E",
+          "id": "personaGemini001",
           "name": "googlePalmApi"
         }
       }
@@ -672,7 +673,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        712,
+        720,
         944
       ],
       "id": "2b118a3c-f513-478a-b831-43b7f95bf932",

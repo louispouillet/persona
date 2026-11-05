@@ -169,7 +169,7 @@
       "id": "28dc0511-31c3-4eb5-89ee-9d066d825230",
       "credentials": {
         "googlePalmApi": {
-          "id": "kB5KBhp12r9B2z98",
+          "id": "personaGemini001",
           "name": "googlePalmApi"
         }
       }
@@ -380,7 +380,7 @@
       "name": "Sign unsubscribe link",
       "credentials": {
         "crypto": {
-          "id": "Pqv9pad8qudfX29N",
+          "id": "personaCrypto001",
           "name": "crypto"
         }
       },

@@ -136,7 +136,7 @@
       "webhookId": "29cf5aca-85ec-4f4d-92bc-3428e0fc7d0a",
       "credentials": {
         "smtp": {
-          "id": "BYJasufnri34EZ0v",
+          "id": "personaSmtp00001",
           "name": "smtp"
         }
       },
