@@ -12,6 +12,19 @@ for (const f of fs.readdirSync('/tmp/export')) {
 endef
 export CLEAN_JS
 
+# n8n turns a missing pinData into null on import, which breaks the editor's test runs
+# ("Cannot read properties of null"): give every imported workflow an empty one.
+define ADD_PIN_DATA_JS
+const fs = require('fs');
+for (const f of fs.readdirSync('/tmp/workflows')) {
+  const path = '/tmp/workflows/' + f;
+  const workflow = JSON.parse(fs.readFileSync(path, 'utf8'));
+  workflow.pinData = workflow.pinData || {};
+  fs.writeFileSync(path, JSON.stringify(workflow, null, 2));
+}
+endef
+export ADD_PIN_DATA_JS
+
 .PHONY: help up down logs import export
 
 help: ## Show this help
@@ -29,6 +42,7 @@ logs: ## Follow n8n logs
 import: ## Import all workflows from workflows/ into n8n, keeping their IDs
 	docker compose exec -T -u root n8n rm -rf /tmp/workflows
 	docker compose cp workflows/. n8n:/tmp/workflows
+	@printf '%s' "$$ADD_PIN_DATA_JS" | docker compose exec -T -u root n8n node -
 	docker compose exec -T n8n n8n import:workflow --separate --input=/tmp/workflows
 
 export: ## Export all workflows from n8n into workflows/ (cleaned)
