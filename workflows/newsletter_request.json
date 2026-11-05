@@ -1,0 +1,372 @@
+{
+  "id": "LpFXphZ5jnzDwFfC",
+  "name": "Newsletter - Request",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Trigger",
+      "id": "e7c81de8-eee1-490d-b9ac-9599ac854dcd"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aChKsEsS7mQ4vXp2",
+          "mode": "list",
+          "cachedResultName": "Auth - Check session"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Run Check session",
+      "id": "861dd2bd-321d-435f-98a9-9a3927f4a99a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1bb56926-6be3-4256-a15e-bc181585f347",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Is session valid?",
+      "id": "5525c08e-e88a-4efe-b0d5-0e273fa3ebcf"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "832d2ca4-e958-4ba3-9036-0a9cbb82e44c",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        200
+      ],
+      "name": "Reply: refused",
+      "id": "dc3228b8-1884-47e4-b37e-00bdcc91f6a4"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Run Check session').first().json.userId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -100
+      ],
+      "name": "Find user",
+      "alwaysOutputData": true,
+      "id": "b343ba4b-b4f1-4917-a471-aa8bc6537361"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getRefusal(user) {\n  if (!user.id) {\n    return 'Account not found.';\n  }\n  if (user.email_verified !== true) {\n    return 'Verify your email address first: enter the code you received by email.';\n  }\n  if (user.unsubscribed === true) {\n    return 'You are unsubscribed from the newsletter. Subscribe again first to receive it.';\n  }\n  return '';\n}\n\nconst user = $input.first().json;\nconst refusal = getRefusal(user);\n\nreturn [{ json: { ok: refusal === '', message: refusal, user_id: user.id } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -100
+      ],
+      "name": "Check newsletter access",
+      "id": "b26156bc-9541-4997-8ebc-f1c36ec0dff8"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b940d308-a16f-43ce-b20d-3714671f7c13",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        -100
+      ],
+      "name": "Can receive?",
+      "id": "76694458-ebb3-44e3-b76b-5e6b6c1a4981"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c36e57c0-ea8f-4288-8f8e-001e373f5571",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1320,
+        100
+      ],
+      "name": "Reply: not allowed",
+      "id": "a36d4d11-5743-4307-8f78-3cd1c57b8e80"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "XSLEhwxtrzRfdVUF",
+          "mode": "list",
+          "cachedResultName": "Newsletter Send"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.user_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        -200
+      ],
+      "name": "Run Newsletter Send",
+      "onError": "continueRegularOutput",
+      "id": "9154f989-8149-4a2c-8e96-a4332d11f7da"
+    },
+    {
+      "parameters": {
+        "jsCode": "function toMessage(result) {\n  if (result.sent === true) {\n    return `Your newsletter with ${result.article_count} articles has been sent to your email address.`;\n  }\n  if (result.reason === 'no_matching_articles') {\n    return 'There are no new articles matching your interests since your last newsletter. Try again later or add more interests.';\n  }\n  return 'The newsletter could not be sent right now. Please try again later.';\n}\n\nreturn [{ json: { message: toMessage($input.first().json) } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -200
+      ],
+      "name": "Reply: result",
+      "id": "6cb811f5-e8ac-49f9-b805-dc4ebb6ceda7"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Check session": {
+      "main": [
+        [
+          {
+            "node": "Is session valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is session valid?": {
+      "main": [
+        [
+          {
+            "node": "Find user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find user": {
+      "main": [
+        [
+          {
+            "node": "Check newsletter access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check newsletter access": {
+      "main": [
+        [
+          {
+            "node": "Can receive?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can receive?": {
+      "main": [
+        [
+          {
+            "node": "Run Newsletter Send",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: not allowed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Newsletter Send": {
+      "main": [
+        [
+          {
+            "node": "Reply: result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

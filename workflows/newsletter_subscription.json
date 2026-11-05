@@ -1,0 +1,251 @@
+{
+  "id": "WzRiVctlDDvkCvKV",
+  "name": "Newsletter - Subscription",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_hash"
+            },
+            {
+              "name": "action"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Trigger",
+      "id": "f9c08c4f-a706-4084-8078-3fc33574cf6b"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aChKsEsS7mQ4vXp2",
+          "mode": "list",
+          "cachedResultName": "Auth - Check session"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Run Check session",
+      "id": "37cd29eb-83bb-4eab-b190-7f2aed640d9e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4a5ecd1c-25f2-47b6-bed1-c19b8185a0f1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Is session valid?",
+      "id": "d76b3a8b-a154-449d-9150-b299b2d22742"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f3e1e39d-611b-482f-aace-f989ea98b688",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        160
+      ],
+      "name": "Reply: refused",
+      "id": "3a189999-f29b-4c68-9f41-919b0ce2d9c5"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "users"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Run Check session').first().json.userId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "unsubscribed": "={{ $('Trigger').first().json.action === 'unsubscribe' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "unsubscribed",
+              "displayName": "unsubscribed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -100
+      ],
+      "name": "Update subscription",
+      "id": "c0d18d6d-e855-43ee-aff8-dbae8e38646c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1bc25f9-2d63-49c7-be84-6173b85e9ed9",
+              "name": "message",
+              "value": "={{ $('Trigger').first().json.action === 'unsubscribe' ? 'You are unsubscribed: you will not receive the newsletter anymore. You can subscribe again at any time.' : 'You are subscribed: you will receive the newsletter every day at your send time.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -100
+      ],
+      "name": "Reply: done",
+      "id": "f967fb62-1ae8-4af6-92bf-4c5dc6419fad"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Check session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Check session": {
+      "main": [
+        [
+          {
+            "node": "Is session valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is session valid?": {
+      "main": [
+        [
+          {
+            "node": "Update subscription",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update subscription": {
+      "main": [
+        [
+          {
+            "node": "Reply: done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

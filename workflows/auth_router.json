@@ -50,7 +50,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Every field leaves this node as a string: '' means \"not provided\", never null/undefined.\nconst input = $input.first().json;\n// where each action goes: 0 Register, 1 Session, 2 Profile, 3 Verify, 4 Account, 5 Export (7 = unknown)\nconst ROUTES = { register: 0, login: 1, logout: 1, update_profile: 2, verify: 3, delete_account: 4, export_data: 5, resend_code: 6 };\nconst action = Object.hasOwn(ROUTES, input.action) ? input.action : '';\nconst text = (v, max, trim = true) => {\n  if (typeof v !== 'string') return '';\n  return (trim ? v.trim() : v).slice(0, max);\n};\n\nreturn [{ json: {\n  action,\n  route: action ? ROUTES[action] : 7,\n  sessionId: text(input.sessionId, 128),\n  email: text(input.email, 254).toLowerCase(),\n  // a password may legitimately start or end with spaces\n  password: text(input.password, 256, false),\n  code: text(input.code, 10).replace(/\\s/g, ''),\n  consent: input.consent === true || input.consent === 'true',\n  language: text(input.language, 10).toLowerCase().split('-')[0],\n  interests: text(input.interests, 1000),\n  send_hour: text(input.send_hour, 10),\n  timezone: text(input.timezone, 64),\n} }];"
+        "jsCode": "// Every field leaves this node as a string: '' means \"not provided\", never null/undefined.\nconst input = $input.first().json;\n// where each action goes: 0 Register, 1 Session, 2 Profile, 3 Verify, 4 Account, 5 Export, 6 Resend,\n// 7 Newsletter request, 8 Newsletter subscription (9 = unknown)\nconst ROUTES = { register: 0, login: 1, logout: 1, update_profile: 2, verify: 3, delete_account: 4, export_data: 5, resend_code: 6, send_newsletter: 7, unsubscribe: 8, subscribe: 8 };\nconst action = Object.hasOwn(ROUTES, input.action) ? input.action : '';\nconst text = (v, max, trim = true) => {\n  if (typeof v !== 'string') return '';\n  return (trim ? v.trim() : v).slice(0, max);\n};\n\nreturn [{ json: {\n  action,\n  route: action ? ROUTES[action] : 9,\n  sessionId: text(input.sessionId, 128),\n  email: text(input.email, 254).toLowerCase(),\n  // a password may legitimately start or end with spaces\n  password: text(input.password, 256, false),\n  code: text(input.code, 10).replace(/\\s/g, ''),\n  consent: input.consent === true || input.consent === 'true',\n  language: text(input.language, 10).toLowerCase().split('-')[0],\n  interests: text(input.interests, 1000),\n  send_hour: text(input.send_hour, 10),\n  timezone: text(input.timezone, 64),\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -79,7 +79,7 @@
     {
       "parameters": {
         "mode": "expression",
-        "numberOutputs": 8,
+        "numberOutputs": 10,
         "output": "={{ $json.route }}"
       },
       "type": "n8n-nodes-base.switch",
@@ -109,7 +109,7 @@
       "typeVersion": 3.4,
       "position": [
         480,
-        1000
+        1600
       ],
       "id": "8749453e-0439-4805-ad12-81429f49523c",
       "name": "Reply: unknown action"
@@ -565,6 +565,93 @@
       ],
       "id": "d23b9f1d-b3b7-420f-9231-7e3e40f59c1c",
       "name": "Run Resend"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LpFXphZ5jnzDwFfC",
+          "mode": "list",
+          "cachedResultName": "Newsletter - Request"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        1200
+      ],
+      "name": "Run Newsletter Request",
+      "id": "f2c907e5-9bfa-4f3e-9d0d-027d70e493bf"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WzRiVctlDDvkCvKV",
+          "mode": "list",
+          "cachedResultName": "Newsletter - Subscription"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_hash": "={{ $json.session_hash }}",
+            "action": "={{ $json.action }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_hash",
+              "displayName": "session_hash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        1400
+      ],
+      "name": "Run Newsletter Subscription",
+      "id": "ce0487f3-e1fe-41b5-b0b3-af39b17e5d72"
     }
   ],
   "connections": {
@@ -648,6 +735,20 @@
         [
           {
             "node": "Run Resend",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run Newsletter Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run Newsletter Subscription",
             "type": "main",
             "index": 0
           }
