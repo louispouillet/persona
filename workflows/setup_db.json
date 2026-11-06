@@ -223,7 +223,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const DEFAULT_SETTINGS = [\n  { key: 'public_url', value: 'http://localhost:5678' },\n];\n\nfunction toItem(setting) {\n  return { json: setting };\n}\n\nreturn DEFAULT_SETTINGS.map(toItem);\n"
+        "jsCode": "const DEFAULT_SETTINGS = [\n  { key: 'public_url', value: 'http://localhost:5678' },\n  { key: 'alert_email', value: '' },\n];\n\nfunction toItem(setting) {\n  return { json: setting };\n}\n\nreturn DEFAULT_SETTINGS.map(toItem);\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

@@ -1,0 +1,173 @@
+{
+  "id": "vVCNlzPpIrW3BMmL",
+  "name": "Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Error Trigger",
+      "id": "1d20f384-50e6-46e0-82d0-e9993f71bd56"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getFailure(data) {\n  if (data.execution) {\n    return {\n      error: data.execution.error || {},\n      node: data.execution.error?.node?.name || data.execution.lastNodeExecuted || 'unknown',\n      mode: data.execution.mode,\n      link: data.execution.url || 'execution not saved',\n    };\n  }\n  return {\n    error: data.trigger?.error || {},\n    node: 'trigger',\n    mode: data.trigger?.mode || 'trigger',\n    link: 'the workflow could not start',\n  };\n}\n\nfunction buildText(workflowName, failure) {\n  return [\n    `The workflow \"${workflowName}\" failed.`,\n    '',\n    `Node: ${failure.node}`,\n    `Error: ${failure.error.message || 'unknown error'}`,\n    `Mode: ${failure.mode}`,\n    `Execution: ${failure.link}`,\n    `Date: ${new Date().toISOString()}`,\n  ].join('\\n');\n}\n\nconst data = $input.first().json;\nconst workflowName = data.workflow?.name || 'Unknown workflow';\nconst failure = getFailure(data);\n\nreturn [{ json: { subject: `[Persona] ${workflowName} failed`, text: buildText(workflowName, failure) } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Build alert",
+      "id": "df2fcd1b-d775-4f4e-b68e-dfdffefdb09e"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "settings"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "alert_email"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Get alert email",
+      "alwaysOutputData": true,
+      "id": "f876c733-4cae-4cba-9ede-2a325d6f8b61"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5d8d318b-80aa-4100-87a6-13f643089681",
+              "leftValue": "={{ $json.value }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ],
+      "name": "Has alert email?",
+      "id": "91191c74-77fe-46b7-ad4a-4d94d2b0ac59"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Persona alerts <louis.vags@gmail.com>",
+        "toEmail": "={{ $json.value }}",
+        "subject": "={{ $('Build alert').first().json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $('Build alert').first().json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        -100
+      ],
+      "name": "Send alert",
+      "credentials": {
+        "smtp": {
+          "id": "personaSmtp00001",
+          "name": "smtp"
+        }
+      },
+      "id": "34cd085b-d4e7-448c-b0ab-073c5644dbd8",
+      "webhookId": "53c67fbd-61fe-4fff-a09f-b1f69e8e6af9"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build alert": {
+      "main": [
+        [
+          {
+            "node": "Get alert email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get alert email": {
+      "main": [
+        [
+          {
+            "node": "Has alert email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has alert email?": {
+      "main": [
+        [
+          {
+            "node": "Send alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

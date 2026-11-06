@@ -194,7 +194,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "errorWorkflow": "vVCNlzPpIrW3BMmL"
   },
   "active": false
 }

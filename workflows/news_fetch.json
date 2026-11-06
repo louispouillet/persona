@@ -493,7 +493,8 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "vVCNlzPpIrW3BMmL"
   },
   "active": false
 }
